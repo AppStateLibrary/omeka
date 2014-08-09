@@ -1,0 +1,5 @@
+/*
+     http://www.apache.org/licenses/LICENSE-2.0.html Apache 2 License
+*/
+(function(a){a.widget("neatline.togglebutton",{options:{enabled_by_default:!0,pressed_by_default:!1,visible_by_default:!0,highlight_border_color:"#6393ff",pressed_border_color:"#6393ff",pressed_text_color:"#517fe6"},_create:function(){this.element.addClass("neatline-toggle-button");this.pressed=!1;this.enabled=!0;this._addEvents();this.options.pressed_by_default&&this.press();this.options.visible_by_default||this.element.css("display","none");this.options.enabled_by_default||this.disable()},_addEvents:function(){this.element.bind({"mouseenter mouseleave":a.proxy(this._highlight,
+this),mousedown:a.proxy(this.press,this)})},press:function(){if(this.enabled)this.element.toggleClass("neatline-pressed"),this.pressed?(this._trigger("unpress"),this.pressed=!1):(this._trigger("press"),this.pressed=!0)},disable:function(){this.enabled=!1;this.element.css({opacity:0.5,cursor:"default"})},enable:function(){this.enabled=!0;this.element.css({opacity:1,cursor:"pointer"})},isPressed:function(){return this.pressed},_highlight:function(){this.element.toggleClass("neatline-highlighted")}})})(jQuery);

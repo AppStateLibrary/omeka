@@ -1,0 +1,2 @@
+wysihtml5.lang.Dispatcher=Base.extend({observe:function(a,d){this.events=this.events||{};this.events[a]=this.events[a]||[];this.events[a].push(d);return this},on:function(){return this.observe.apply(this,wysihtml5.lang.array(arguments).get())},fire:function(a,d){this.events=this.events||{};for(var c=this.events[a]||[],b=0;b<c.length;b++)c[b].call(this,d);return this},stopObserving:function(a,d){this.events=this.events||{};var c=0,b,e;if(a){for(b=this.events[a]||[],e=[];c<b.length;c++)b[c]!==d&&d&&
+e.push(b[c]);this.events[a]=e}else this.events={};return this}});

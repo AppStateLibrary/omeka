@@ -1,0 +1,1 @@
+wysihtml5.quirks.cleanPastedHTML=function(){var i={"a u":wysihtml5.dom.replaceWithChildNodes};return function(a,c,b){var c=c||i,b=b||a.ownerDocument||document,g=typeof a==="string",d,h,e,f=0,a=g?wysihtml5.dom.getAsDom(a,b):a;for(e in c){d=a.querySelectorAll(e);b=c[e];for(h=d.length;f<h;f++)b(d[f])}return g?a.innerHTML:a}}();

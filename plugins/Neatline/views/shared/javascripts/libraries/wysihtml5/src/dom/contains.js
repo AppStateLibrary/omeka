@@ -1,0 +1,1 @@
+wysihtml5.dom.contains=function(){var c=document.documentElement;if(c.contains)return function(b,a){if(a.nodeType!==wysihtml5.ELEMENT_NODE)a=a.parentNode;return b!==a&&b.contains(a)};else if(c.compareDocumentPosition)return function(b,a){return!!(b.compareDocumentPosition(a)&16)}}();

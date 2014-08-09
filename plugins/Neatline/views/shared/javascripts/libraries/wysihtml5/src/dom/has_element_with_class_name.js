@@ -1,0 +1,1 @@
+(function(d){var e={},g=1;d.dom.hasElementWithClassName=function(a,b){if(!d.browser.supportsNativeGetElementsByClassName())return!!a.querySelector("."+b);var f=(a._wysihtml5_identifier||(a._wysihtml5_identifier=g++))+":"+b,c=e[f];c||(c=e[f]=a.getElementsByClassName(b));return c.length>0}})(wysihtml5);

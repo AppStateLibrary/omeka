@@ -1,0 +1,1 @@
+(function(d){d.quirks.getCorrectInnerHTML=function(a){var b=a.innerHTML;if(b.indexOf("%7E")===-1)return b;var a=a.querySelectorAll("[href*='~'], [src*='~']"),e,f,g,c;for(c=0,g=a.length;c<g;c++)e=a[c].href||a[c].src,f=d.lang.string(e).replace("~").by("%7E"),b=d.lang.string(b).replace(f).by(e);return b}})(wysihtml5);

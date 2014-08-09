@@ -1,0 +1,1 @@
+(function(a){a.commands.underline={exec:function(b,c){return a.commands.formatInline.exec(b,c,"u")},state:function(b,c){return a.commands.formatInline.state(b,c,"u")},value:function(){}}})(wysihtml5);

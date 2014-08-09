@@ -1,0 +1,1 @@
+(function(b){var d="<br>"+(b.browser.needsSpaceAfterLineBreak()?" ":"");b.commands.insertLineBreak={exec:function(a,c){a.commands.support(c)?(a.doc.execCommand(c,!1,null),b.browser.autoScrollsToCaret()||a.selection.scrollIntoView()):a.commands.exec("insertHTML",d)},state:function(){return!1},value:function(){}}})(wysihtml5);

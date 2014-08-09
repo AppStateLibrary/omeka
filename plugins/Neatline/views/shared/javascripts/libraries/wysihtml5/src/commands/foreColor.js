@@ -1,0 +1,1 @@
+(function(a){var e=/wysiwyg-color-[a-z]+/g;a.commands.foreColor={exec:function(b,c,d){return a.commands.formatInline.exec(b,c,"span","wysiwyg-color-"+d,e)},state:function(b,c,d){return a.commands.formatInline.state(b,c,"span","wysiwyg-color-"+d,e)},value:function(){}}})(wysihtml5);

@@ -1,0 +1,5 @@
+/*
+     http://www.apache.org/licenses/LICENSE-2.0.html Apache 2 License
+*/
+(function(b){b.widget("neatline.configureitems",{_create:function(){this.content=b("#configure-items");this.reorderButton=this.content.find("button.loop");this.saveButton=this.content.find("button.save");this._isOrdering=!1;this._constructDropdown();this._constructFormWidgets()},_constructDropdown:function(){this.element.nlDropdown()},_constructFormWidgets:function(){var a=this;this.reorderButton.bind({mousedown:function(){a._isOrdering?(a._trigger("endreorder"),a._isOrdering=!1,a.reorderButton.removeClass("btn-neatline")):
+(a._trigger("reorder"),a._isOrdering=!0,a.reorderButton.addClass("btn-neatline"))},click:function(a){a.preventDefault()}});this.saveButton.bind({mousedown:function(){a.saveOrder()},click:function(a){a.preventDefault()}})},setOrder:function(a){this.order=a},saveOrder:function(){var a=this;this._trigger("getorder");b.ajax({url:"ajax/order",type:"POST",data:{exhibit_id:Neatline.record.id,order:this.order},success:function(){a._trigger("neworder")}})}})})(jQuery);

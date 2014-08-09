@@ -1,0 +1,1 @@
+(function(a){a.quirks.redraw=function(b){a.dom.addClass(b,"wysihtml5-quirks-redraw");a.dom.removeClass(b,"wysihtml5-quirks-redraw");try{var c=b.ownerDocument;c.execCommand("italic",!1,null);c.execCommand("italic",!1,null)}catch(d){}}})(wysihtml5);

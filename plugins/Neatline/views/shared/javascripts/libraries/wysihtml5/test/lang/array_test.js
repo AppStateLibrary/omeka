@@ -1,0 +1,2 @@
+module("wysihtml5.lang.array");test("contains()",function(){var a=[1,"2","foo"];ok(wysihtml5.lang.array(a).contains(1));ok(!wysihtml5.lang.array(a).contains(2));ok(wysihtml5.lang.array(a).contains("2"));ok(wysihtml5.lang.array(a).contains("foo"))});test("without()",function(){var a=[1,2,3];deepEqual(wysihtml5.lang.array(a).without([1]),[2,3]);deepEqual(wysihtml5.lang.array(a).without([4]),[1,2,3])});
+test("get()",function(){var a=document.getElementsByTagName("*"),b=wysihtml5.lang.array(a).get();equal(b.length,a.length);ok(b instanceof Array)});

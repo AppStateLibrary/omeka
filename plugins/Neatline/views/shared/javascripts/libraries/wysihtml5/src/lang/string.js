@@ -1,0 +1,1 @@
+(function(){var d=/^\s+/,e=/\s+$/;wysihtml5.lang.string=function(a){a=String(a);return{trim:function(){return a.replace(d,"").replace(e,"")},interpolate:function(b){for(var c in b)a=this.replace("#{"+c+"}").by(b[c]);return a},replace:function(b){return{by:function(c){return a.split(b).join(c)}}}}}})();

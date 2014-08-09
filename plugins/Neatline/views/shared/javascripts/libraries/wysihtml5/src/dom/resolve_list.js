@@ -1,0 +1,2 @@
+(function(e){function g(a){var c=a.ownerDocument.createElement("br");a.appendChild(c)}e.resolveList=function(a){if(!(a.nodeName!=="MENU"&&a.nodeName!=="UL"&&a.nodeName!=="OL")){var c=a.ownerDocument.createDocumentFragment(),b=a.previousElementSibling||a.previousSibling,h,f,d;for(b&&e.getStyle("display").from(b)!=="block"&&g(c);d=a.firstChild;){for(h=d.lastChild;b=d.firstChild;)f=(f=b===h)&&e.getStyle("display").from(b)!=="block"&&b.nodeName!=="BR",c.appendChild(b),f&&g(c);d.parentNode.removeChild(d)}a.parentNode.replaceChild(c,
+a)}}})(wysihtml5.dom);

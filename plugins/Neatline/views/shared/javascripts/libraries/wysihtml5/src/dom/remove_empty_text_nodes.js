@@ -1,0 +1,1 @@
+wysihtml5.dom.removeEmptyTextNodes=function(a){for(var c=wysihtml5.lang.array(a.childNodes).get(),d=c.length,b=0;b<d;b++)a=c[b],a.nodeType===wysihtml5.TEXT_NODE&&a.data===""&&a.parentNode.removeChild(a)};

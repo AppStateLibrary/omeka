@@ -1,0 +1,38 @@
+# dist directory
+/dist/
+
+# Config files
+/db.ini
+/application/config/config.ini
+/application/tests/config.ini
+
+# Log files
+/application/logs/errors.log
+/application/logs/processes.log
+/application/tests/log.xml
+
+# Test files
+/application/tests/_files/temp/
+
+# Unlike the upstream Omeka, we want themes and plugins
+plugins/Dropbox/files/*
+plugins/CsvImport/csv_files/*
+plugins/EadImporter/xmldump/*
+
+# Files
+/files/original/*
+/files/fullsize/*
+/files/square_thumbnails/*
+/files/theme_uploads/*
+/files/thumbnails/*
+
+# For macs
+.DS_Store
+
+# For VIM
+.*.sw*
+
+# For Eclipse
+.buildpath
+.project
+.settings/

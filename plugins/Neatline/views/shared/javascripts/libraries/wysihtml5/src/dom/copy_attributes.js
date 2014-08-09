@@ -1,0 +1,1 @@
+wysihtml5.dom.copyAttributes=function(d){return{from:function(b){return{to:function(e){for(var a,c=0,f=d.length;c<f;c++)a=d[c],typeof b[a]!=="undefined"&&b[a]!==""&&(e[a]=b[a]);return{andTo:arguments.callee}}}}}};

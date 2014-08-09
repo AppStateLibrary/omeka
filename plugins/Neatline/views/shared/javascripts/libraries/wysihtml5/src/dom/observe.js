@@ -1,0 +1,2 @@
+wysihtml5.dom.observe=function(c,b,f){for(var b=typeof b==="string"?[b]:b,g,d,e=0,h=b.length;e<h;e++)d=b[e],c.addEventListener?c.addEventListener(d,f,!1):(g=function(a){if(!("target"in a))a.target=a.srcElement;a.preventDefault=a.preventDefault||function(){this.returnValue=!1};a.stopPropagation=a.stopPropagation||function(){this.cancelBubble=!0};f.call(c,a)},c.attachEvent("on"+d,g));return{stop:function(){for(var a,d=0,e=b.length;d<e;d++)a=b[d],c.removeEventListener?c.removeEventListener(a,f,!1):c.detachEvent("on"+
+a,g)}}};

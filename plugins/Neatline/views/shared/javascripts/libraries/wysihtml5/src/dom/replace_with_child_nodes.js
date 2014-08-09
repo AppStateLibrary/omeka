@@ -1,0 +1,1 @@
+wysihtml5.dom.replaceWithChildNodes=function(a){if(a.parentNode)if(a.firstChild){for(var b=a.ownerDocument.createDocumentFragment();a.firstChild;)b.appendChild(a.firstChild);a.parentNode.replaceChild(b,a)}else a.parentNode.removeChild(a)};

@@ -1,0 +1,1 @@
+wysihtml5.lang.array=function(b){return{contains:function(a){if(b.indexOf)return b.indexOf(a)!==-1;else{for(var d=0,c=b.length;d<c;d++)if(b[d]===a)return!0;return!1}},without:function(a){for(var a=wysihtml5.lang.array(a),d=[],c=0,e=b.length;c<e;c++)a.contains(b[c])||d.push(b[c]);return d},get:function(){for(var a=0,d=b.length,c=[];a<d;a++)c.push(b[a]);return c}}};

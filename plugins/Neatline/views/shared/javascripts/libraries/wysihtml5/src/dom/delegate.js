@@ -1,0 +1,1 @@
+(function(b){b.dom.delegate=function(c,f,d,g){return b.dom.observe(c,d,function(e){for(var a=e.target,d=b.lang.array(c.querySelectorAll(f));a&&a!==c;){if(d.contains(a)){g.call(a,e);break}a=a.parentNode}})}})(wysihtml5);

@@ -1,0 +1,1 @@
+wysihtml5.dom.renameElement=function(a,d){for(var b=a.ownerDocument.createElement(d),c;c=a.firstChild;)b.appendChild(c);wysihtml5.dom.copyAttributes(["align","className"]).from(a).to(b);a.parentNode.replaceChild(b,a);return b};
