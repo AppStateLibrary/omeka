@@ -9,12 +9,15 @@
 /**
  * Controller for editing and viewing Contribution plugin settings.
  */
-class Contribution_IndexController extends Omeka_Controller_Action
+class Contribution_IndexController extends Omeka_Controller_AbstractActionController
 {
     /**
      * Index action.
      */
     public function indexAction()
     {
+        if(!is_allowed('Contribution_Settings', 'edit')) {
+            $this->redirect('contribution/items');
+        }
     }
 }

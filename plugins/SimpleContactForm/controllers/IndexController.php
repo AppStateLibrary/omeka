@@ -1,5 +1,16 @@
 <?php
-class SimpleContactForm_IndexController extends Omeka_Controller_Action
+/**
+ * @copyright Roy Rosenzweig Center for History and New Media, 2007-2012
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt
+ * @package SimpleContactForm
+ */
+
+/**
+ * Controller for Contact form.
+ *
+ * @package SimpleContactForm
+ */
+class SimpleContactForm_IndexController extends Omeka_Controller_AbstractActionController
 {    
 	public function indexAction()
 	{	
@@ -12,8 +23,10 @@ class SimpleContactForm_IndexController extends Omeka_Controller_Action
 	    if ($this->getRequest()->isPost()) {    		
     		// If the form submission is valid, then send out the email
     		if ($this->_validateFormSubmission($captchaObj)) {
-				$this->sendEmailNotification($_POST['email'], $_POST['name'], $_POST['message']);
-	            $this->redirect->gotoRoute(array(), 'simple_contact_form_thankyou');
+		    $this->sendEmailNotification($_POST['email'], $_POST['name'], $_POST['message']);
+	            $url = WEB_ROOT."/".SIMPLE_CONTACT_FORM_PAGE_PATH."thankyou";
+                    $this->_helper->redirector->goToUrl($url);
+                 
     		}
 	    }	
 	    
@@ -40,13 +53,13 @@ class SimpleContactForm_IndexController extends Omeka_Controller_Action
 	    $email = $this->getRequest()->getPost('email');
 	    // ZF ReCaptcha ignores the 1st arg.
 	    if ($captcha and !$captcha->isValid('foo', $_POST)) {
-            $this->flashError('Your CAPTCHA submission was invalid, please try again.');
+            $this->_helper->flashMessenger(__('Your CAPTCHA submission was invalid, please try again.'));
             $valid = false;
 	    } else if (!Zend_Validate::is($email, 'EmailAddress')) {
-            $this->flashError('Please enter a valid email address.');
+            $this->_helper->flashMessenger(__('Please enter a valid email address.'));
             $valid = false;
 	    } else if (empty($msg)) {
-            $this->flashError('Please enter a message.');
+            $this->_helper->flashMessenger(__('Please enter a message.'));
             $valid = false;
 	    }
 	    

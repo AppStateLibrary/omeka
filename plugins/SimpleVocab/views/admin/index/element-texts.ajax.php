@@ -1,22 +1,17 @@
-<?php if (!count($this->elementTexts)): ?>
-<p><strong>No texts for the selected element exist in your archive.</strong></p>
+<?php if (!$element_texts): ?>
+<p class="error"><?php echo __('No texts for the selected element exist in Omeka.'); ?></p>
 <?php else: ?>
 <table>
     <tr>
-        <th>Count</th>
-        <th>Warnings</th>
-        <th>Text</th>
+        <th><?php echo __('Count'); ?></th>
+        <th><?php echo __('Warnings'); ?></th>
+        <th><?php echo __('Text'); ?></th>
     </tr>
-    <?php foreach ($this->elementTexts as $elementText):
-        $warnings = array();
-        if ($this->simpleVocabTerm && !in_array($elementText->text, $this->terms)) $warnings[] = 'Not in vocabulary.';
-        if (100 < strlen($elementText->text)) $warnings[] = 'Long text.';
-        if (strstr($elementText->text, "\n")) $warnings[] = 'Contains newlines.';
-        ?>
+    <?php foreach ($element_texts as $element_text): ?>
     <tr>
-        <td><?php echo $elementText->count; ?></td>
-        <td style="color:red;"><?php echo implode("<br />", $warnings); ?></td>
-        <td><?php echo nl2br($elementText->text); ?></td>
+        <td><?php echo $element_text['count']; ?></td>
+        <td class="error"><?php echo implode("<br />", $element_text['warnings']); ?></td>
+        <td><?php echo snippet(nl2br($element_text['text']), 0, 600); ?></td>
     </tr>
     <?php endforeach; ?>
 </table>

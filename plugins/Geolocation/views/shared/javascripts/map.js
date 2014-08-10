@@ -8,10 +8,10 @@ OmekaMap.prototype = {
     
     map: null,
     mapDivId: null,
-    mapSize: 'small',
     markers: [],
     options: {},
     center: null,
+    markerBounds: null,
     
     addMarker: function (lat, lng, options, bindHtml)
     {        
@@ -24,47 +24,65 @@ OmekaMap.prototype = {
         var marker = new google.maps.Marker(options);
         
         if (bindHtml) {
+            var infoWindow = new google.maps.InfoWindow({
+                content: bindHtml
+            });
+
+            var that = this;
             google.maps.event.addListener(marker, 'click', function () {
-                var infoWindow = new google.maps.InfoWindow({
-                    content: bindHtml
-                });
-                infoWindow.open(marker.getMap(), marker);
+                // Prevent multiple windows from being open at once.
+                if (that.lastWindow) {
+                    that.lastWindow.close();
+                }
+                that.lastWindow = infoWindow;
+                infoWindow.open(this.map, marker);
             });
         }
                
         this.markers.push(marker);
+        this.markerBounds.extend(options.position);
         return marker;
+    },
+
+    fitMarkers: function () {
+        if (this.markers.length == 1) {
+            this.map.setCenter(this.markers[0].getPosition());
+        } else {
+            this.map.fitBounds(this.markerBounds);
+        }
     },
     
     initMap: function () {
-        
-        // Build the map.
-        var mapOptions = {
-            zoom: this.center.zoomLevel,
-            center: new google.maps.LatLng(this.center.latitude, this.center.longitude),
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
-            navigationControl: true,
-            mapTypeControl: true
-        };    
-        switch (this.mapSize) {
-        case 'small':
-            mapOptions.navigationControlOptions = {
-                style: google.maps.NavigationControlStyle.SMALL
-            };
-            break;
-        case 'large':
-        default:
-            mapOptions.navigationControlOptions = {
-                style: google.maps.NavigationControlStyle.DEFAULT
-            };
-        }
-
-        this.map = new google.maps.Map(document.getElementById(this.mapDivId), mapOptions); 
-
         if (!this.center) {
             alert('Error: The center of the map has not been set!');
             return;
         }
+
+        // Build the map.
+        var mapOptions = {
+            zoom: this.center.zoomLevel,
+            center: new google.maps.LatLng(this.center.latitude, this.center.longitude),
+        };
+
+        switch (this.options.mapType) {
+        case 'hybrid':
+            mapOptions.mapTypeId = google.maps.MapTypeId.HYBRID;
+            break;
+        case 'satellite':
+            mapOptions.mapTypeId = google.maps.MapTypeId.SATELLITE;
+            break;
+        case 'terrain':
+            mapOptions.mapTypeId = google.maps.MapTypeId.TERRAIN;
+            break;
+        case 'roadmap':
+        default:
+            mapOptions.mapTypeId = google.maps.MapTypeId.ROADMAP;
+        }
+
+        jQuery.extend(mapOptions, this.options.mapOptions);
+
+        this.map = new google.maps.Map(document.getElementById(this.mapDivId), mapOptions);
+        this.markerBounds = new google.maps.LatLngBounds();
 
         // Show the center marker if we have that enabled.
         if (this.center.show) {
@@ -88,6 +106,13 @@ function OmekaMapBrowse(mapDivId, center, options) {
 OmekaMapBrowse.prototype = {
     
     afterLoadItems: function () {
+        if (this.options.fitMarkers) {
+            this.fitMarkers();
+        }
+
+        if (!this.options.list) {
+            return;
+        }
         var listDiv = jQuery('#' + this.options.list);
 
         if (!listDiv.size()) {
@@ -137,7 +162,7 @@ OmekaMapBrowse.prototype = {
                     return false;
                 }            
             }
-        });        
+        });
     },
     
     getBalloonStyling: function (xml) {
@@ -210,9 +235,6 @@ function OmekaMapSingle(mapDivId, center, options) {
     jQuery.extend(true, this, omekaMap);
     this.initMap();
 }
-OmekaMapSingle.prototype = {
-    mapSize: 'small'
-};
 
 function OmekaMapForm(mapDivId, center, options) {
     var that = this;
@@ -267,8 +289,6 @@ function OmekaMapForm(mapDivId, center, options) {
 }
 
 OmekaMapForm.prototype = {
-    mapSize: 'large',
-    
     /* Get the geolocation of the address and add marker. */
     findAddress: function (address) {
         var that = this;
@@ -305,6 +325,7 @@ OmekaMapForm.prototype = {
         
         // Add the marker
         var marker = this.addMarker(point.lat(), point.lng());
+        marker.setAnimation(google.maps.Animation.DROP);
         
         // Pan the map to the marker
         that.map.panTo(point);
@@ -322,9 +343,9 @@ OmekaMapForm.prototype = {
     
     /* Update the latitude, longitude, and zoom of the form. */
     updateForm: function (point) {
-        var latElement = document.getElementsByName('geolocation[0][latitude]')[0];
-        var lngElement = document.getElementsByName('geolocation[0][longitude]')[0];
-        var zoomElement = document.getElementsByName('geolocation[0][zoom_level]')[0];
+        var latElement = document.getElementsByName('geolocation[latitude]')[0];
+        var lngElement = document.getElementsByName('geolocation[longitude]')[0];
+        var zoomElement = document.getElementsByName('geolocation[zoom_level]')[0];
         
         // If we passed a point, then set the form to that. If there is no point, clear the form
         if (point) {
@@ -340,7 +361,7 @@ OmekaMapForm.prototype = {
     
     /* Update the zoom input of the form to be the current zoom on the map. */
     updateZoomForm: function () {
-        var zoomElement = document.getElementsByName('geolocation[0][zoom_level]')[0];
+        var zoomElement = document.getElementsByName('geolocation[zoom_level]')[0];
         zoomElement.value = this.map.getZoom();
     },
     

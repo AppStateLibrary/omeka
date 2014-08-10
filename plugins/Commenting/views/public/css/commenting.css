@@ -1,10 +1,42 @@
 
-form#comment-form {
-	clear:both;	
+/* desperate attempts to prevent crazy padding across themes */
+div#comments-container div {
+	padding: 2px !important;
+	margin: 2px !important;
+	clear: both;
 }
 
-div.comments {
-	
+div#comments-container label {
+	padding: 2px !important;
+	margin: 2px !important;
+}
+
+div#comments-container div.comment-body {
+	margin-left: 100px !important;
+	margin-top: 12px !important;
+	min-height: 60px;
+	padding: 6px;		
+}
+
+/* end desperation */
+
+form#comment-form {
+	clear:both;
+	line-height: 1em;	
+}
+
+form#comment-form input, form#comment-form textarea {
+    height: inherit;
+    font-size: 14px;
+    line-height: 1em;
+}
+
+div#comment-main-container {
+	max-width: 550px;
+}
+
+div#comments-container div.comment-children {
+    margin-left: 18px !important;
 }
 
 div.comment {
@@ -12,33 +44,38 @@ div.comment {
 	margin-top: 3px;
 	margin-bottom: 6px;
 	clear: both;
-	min-height: 120px;
+	min-height: 80px;
+	width: 60%;
+	min-width: 400px;
 }
 
 div.comment-author {
 	float: left;	
-	margin: 6px;
+	margin: 0 6px;
+	width: 100px;
 }
 
-div.comment-body {
-	font-size: 1.5em;
-	margin-left: 100px;
-	border: 1px solid grey;
-	border-radius: 15px;
-	min-height: 60px;
-	padding: 6px;	
+.comment-flag , .comment-unflag {
+    float:left;
+    cursor: pointer;
 }
+
+div.comment-flagged {
+    background-color: pink;
+}
+
 
 div.comment-body p {
 	font-size: 1em;	
 }
 
-p.comment-reply {
+.comment-reply {
 	cursor: pointer;	
+	float: right;
 }
 
 p.comment-author-name {
-	
+	margin: 0;	
 }
 
 div.success {
@@ -48,3 +85,14 @@ div.success {
 input.hidden {
 	display:none;		
 }
+
+span.comment-flag, span.comment-unflag {
+    padding-left: 6px;
+    cursor: pointer;
+}
+
+a.mceButton {
+	overflow: inherit;
+	
+}
+

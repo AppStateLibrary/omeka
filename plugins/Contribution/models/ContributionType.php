@@ -7,10 +7,8 @@
  * @subpackage Models
  */
 
-/**
- * Use a modified version of the Orderable mixin.
- */
-require_once 'ContributionOrderable.php';
+
+require_once 'Mixin/ContributionOrder.php';
 
 /**
  * Represents a contributable item type.
@@ -18,25 +16,27 @@ require_once 'ContributionOrderable.php';
  * @package Contribution
  * @subpackage Models
  */
-class ContributionType extends Omeka_Record
+class ContributionType extends Omeka_Record_AbstractRecord
 {
-    const FILE_PERMISSION_DISALLOWED = 'Disallowed';
-    const FILE_PERMISSION_ALLOWED = 'Allowed';
-    const FILE_PERMISSION_REQUIRED = 'Required';
 
     public $item_type_id;
     public $display_name;
-    public $file_permissions = self::FILE_PERMISSION_DISALLOWED;
+    public $file_permissions = 'Disallowed';
     
     protected $_related = array('ContributionTypeElements' => 'getTypeElements',
                                 'ItemType' => 'getItemType');
 
+    protected function filterPostData($post)
+    {
+        if(empty($post['display_name'])) {
+            $itemType = $this->getDb()->getTable('ItemType')->find($post['item_type_id']);
+            $post['display_name'] = $itemType = $itemType->name;
+        }
+        return $post;
+    }
+    
     protected function _validate()
     {
-        if(empty($this->display_name)) {
-            $this->addError('display_name', 'You must provide a display name.');
-        }
-
         if(empty($this->item_type_id)) {
             $this->addError('item_type_id', 'You must select an item type.');
         }
@@ -44,7 +44,7 @@ class ContributionType extends Omeka_Record
 
     protected function _initializeMixins()
     {
-        $this->_mixins[] = new ContributionOrderable($this,
+        $this->_mixins[] = new Mixin_ContributionOrder($this,
                 'ContributionTypeElement', 'type_id', 'Elements');
     }
     
@@ -75,8 +75,8 @@ class ContributionType extends Omeka_Record
      */
     public function isFileAllowed()
     {
-        return $this->file_permissions == self::FILE_PERMISSION_ALLOWED
-            || $this->file_permissions == self::FILE_PERMISSION_REQUIRED;
+        return $this->file_permissions == 'Allowed'
+            || $this->file_permissions == 'Required';
     }
 
     /**
@@ -86,7 +86,7 @@ class ContributionType extends Omeka_Record
      */
     public function isFileRequired()
     {
-        return $this->file_permissions == self::FILE_PERMISSION_REQUIRED;
+        return $this->file_permissions == 'Required';
     }
 
     /**
@@ -97,9 +97,9 @@ class ContributionType extends Omeka_Record
     public static function getPossibleFilePermissions()
     {
         return array(
-            self::FILE_PERMISSION_DISALLOWED => self::FILE_PERMISSION_DISALLOWED,
-            self::FILE_PERMISSION_ALLOWED => self::FILE_PERMISSION_ALLOWED,
-            self::FILE_PERMISSION_REQUIRED => self::FILE_PERMISSION_REQUIRED
+            'Disallowed' => __('Disallowed'),
+            'Allowed' => __('Allowed'),
+            'Required' => __('Required')
             );
     }
 
@@ -118,11 +118,12 @@ class ContributionType extends Omeka_Record
                 $element->saveForm($elementData);
             }
         }
-        foreach($post['newElements'] as $elementData) {
+        foreach($post['newElements'] as $index => $elementData) {
             // Skip totally empty elements
             if (!empty($elementData['prompt']) || !empty($elementData['element_set_id'])) {
                 $element = new ContributionTypeElement;
-                $this->addChild($element);
+                $element->type_id = $this->id;
+                $element->order = count($post['Elements']) + $index;
                 $element->saveForm($elementData);
             }
         }
@@ -155,9 +156,7 @@ class ContributionType extends Omeka_Record
 (SELECT e.id AS element_id, e.name AS element_name, es.name AS element_set_name
     FROM {$db->Element} AS e
         JOIN {$db->ElementSet} AS es ON e.element_set_id = es.id
-        JOIN {$db->RecordType} AS rt ON es.record_type_id = rt.id
-    WHERE (rt.name = 'Item' OR rt.name = 'All')
-        AND es.name != 'Item Type Metadata'
+    WHERE es.name != 'Item Type Metadata'
 )
 UNION ALL
 (SELECT e.id AS element_id, e.name AS element_name, 'Item Type Metadata' AS element_set_name
@@ -173,5 +172,11 @@ SQL;
             $options[$element['element_set_name']][$element['element_id']] = $element['element_name'];
         }
         return $options;
+    }
+    
+    public function getRecordUrl($action = 'show')
+    {
+        return url("contribution/types/$action/id/{$this->id}");
+        return array('controller' => 'contribution/types', 'action' => $action, 'id' => $this->id);
     }
 }

@@ -1,304 +1,121 @@
 <?php
-class BookReader_IndexController extends Omeka_Controller_Action
+/**
+ * The index controller class.
+ *
+ * @package BookReader
+ */
+class BookReader_IndexController extends Omeka_Controller_AbstractActionController
 {
-	// this function will return the answers to a query
-	// with coordinates of the words matching
-	public function fulltextAction()
-	{
-		$item_id = $this->getRequest()->getParam('item_id');
-		$doc = $this->getRequest()->getParam('doc');
-		$path = $this->getRequest()->getParam('path');
-		$q = $this->getRequest()->getParam('q');
-		$q = utf8_encode($q);
-		$callback = $this->getRequest()->getParam('callback');
-		
+    /**
+     * Returns the answer to a query in order to highlight it via javascript.
+     *
+     * A result can contain multiple words, multiple matches, multiple pars and
+     *  multiple boxes, for example when the answer is on two lines or pages.
+     *
+     * The resulted javascript/json is echoed and sent via Ajax.
+     *
+     * The structure of the json object is:
+     *     ->ia = item id
+     *     ->q = query
+     *      ->page_count = page count (useless)
+     *      ->body_length = body lenght (useless)
+     *      ->leaf0_missing = generally empty
+     *     ->matches = results as array of objects
+     *         ->text = few words to contextualize the result, used in nav bar
+     *         ->par = array of par zones (currently, only the [0] is used)
+     *             ->t = top limit of global zone
+     *             ->r = right limit of global zone
+     *             ->b = bottom limit of global zone
+     *             ->l = left limit of global zone
+     *             ->page = page number
+     *             ->boxes = array of coordinates of boxes to highlight
+     *                 ->r = right limit of word zone
+     *                 ->l = left limit of word zone
+     *                 ->b = bottom limit of word zone
+     *                 ->t = top limit of word zone
+     *                 ->page = page number
+     */
+    public function fulltextAction()
+    {
+        $item_id = $this->getRequest()->getParam('item_id');
+        // TODO Check if doc is different than item_id.
+        $doc = $this->getRequest()->getParam('doc');
+        $query = $this->getRequest()->getParam('q');
+        $query = utf8_encode($query);
+        $callback = $this->getRequest()->getParam('callback');
 
-		// On va récupérer le fichier XML de l'item
-	
-		$this->getResponse()->clearBody ();
-		$this->getResponse()->setHeader('Content-Type', 'text/html');
-		set_current_item(get_item_by_id($item_id));
-		$listing = array();
+        $item = get_record_by_id('item', $item_id);
 
-		while (loop_files_for_item())
-		{
-			$file = get_current_file();
-			if (preg_match("/\.xml$/", $file->original_filename))
-			{
-				$xml_file = escapeshellarg(FILES_DIR. "/" . $file->archive_filename);
-			}
-			elseif ($file->hasThumbnail())
-			{
-				if (preg_match("/(jpg|jpeg|png)/", $file->archive_filename))
-				{
-					$key = $file->archive_filename;
-					$listing[$key]=$file->original_filename;
-				}
-			}
+        $output = array();
 
-		}
-		uasort($listing, 'cmp');
-		$widths = array();
-		$heights = array();
+        // Check if there are data for search.
+        if (BookReader::hasDataForSearch($item)) {
+            $output['ia'] = $doc;
+            $output['q'] = $query;
+            // TODO Check if these keys are really needed.
+            // $output['page_count'] = 200;
+            // $output['body_length'] = 140000;
+            // TODO Kezako ?
+            $output['leaf0_missing'] = false;
 
-		$j = 0;
-		foreach ($listing as $key => $image)
-		{
-			$pathImg = FULLSIZE_DIR."/".$key;
-			list($width, $height, $type, $attr) = getimagesize($pathImg);
-			$widths[] = $width;
-			$heights[] = $height;
-		}
+            $answer = BookReader::searchFulltext($query, $item);
+            $output['matches'] = BookReader::highlightFiles($answer);
+        }
 
-		if ($xml_file)
-		{
-			// On a un fichier XML, on va aller l'interroger pour voir si on a des choses dedans
-			$res = shell_exec("grep -P -i '<\/?page|$q' $xml_file");
-			$res = preg_replace("/<page[^>]*>\n<\/page>\n/",'',$res);
+        // Send answer.
+        $this->getResponse()->clearBody();
+        $this->getResponse()->setHeader('Content-Type', 'text/html');
+        //header('Content-Type: text/javascript; charset=utf8');
+	//header('Access-Control-Allow-Methods: GET, POST');
+        $tab_json = json_encode($output);
+        echo $callback . '(' . $tab_json . ')';
+    }
 
-			$sortie = Array(); 
-			$sortie["ia"] = $doc;
-			$sortie["q"] = $q;
-//			$sortie["page_count"] = 200; // Voir s'il faut vraiment le récupérer
-//			$sortie["body_length"] = 140000; // Idem, voir si c'est utilisé
-			$sortie["leaf0_missing"] = false; // Kezako ?
-			$sortie["matches"] = Array();
+    /**
+     * Returns sized image for the current image.
+     */
+    public function imageProxyAction()
+    {
+        $scale = $this->getRequest()->getParam('scale');
+        $itemId = $this->getRequest()->getParam('id');
+        $item = get_record_by_id('item', $itemId);
 
-			// On va parcourir toutes les lignes qui matchent
-			while (preg_match('/<page number="(\d*)" [^>]*height="(\d*)" width="(\d*)">\n(.*)\n<\/page>(.*)$/siU', $res, $match))
-			{
-				$page_number = $match[1] - 1;
-				$page_height = $match[2];
-				$page_width  = $match[3];
-				$zones = $match[4];
-				$res = $match[5]; // On reprend pour la suite;
-				$tab_lignes = preg_split('/<text /', $zones);
-				foreach ($tab_lignes as $une_ligne)
-				{
-					if (preg_match('/top="(\d*)" left="(\d*)" width="(\d*)" height="(\d*)" font="(\d*)">(.*)<\/text>$/', $une_ligne, $match_ligne))
-					{
-						$zone_top = $match_ligne[1];
-						$zone_left = $match_ligne[2];
-						$zone_width = $match_ligne[3];
-						$zone_height = $match_ligne[4];
-						$zone_font = $match_ligne[5];
-						$zone_text = $match_ligne[6];
-						$zone_text = preg_replace("/<\/?[ib]>/", "", $zone_text);
+        $type = BookReader::sendImage($scale, $item);
 
-						$zone_right = ($page_width - $zone_left - $zone_widht);
-						$zone_bottom = ($page_height -$zone_top - $zone_height);
+        $this->_sendImage($type);
+    }
 
-						// On crée la zone "globale"
-						$tab_zone = Array();
-						$tab_zone["text"] = $zone_text;
+    /**
+     * Returns image of the current image.
+     */
+    public function thumbProxyAction()
+    {
+        $this->_sendImage('thumbnails');
+    }
 
-						// On va créer les boxes ...
-						$zone_width_char = strlen($zone_text);
-						$mot_start_char = stripos($zone_text, $q);
-						$mot_width_char = strlen($q);
-						$zone_text = str_ireplace($q, "{{{".$q."}}}", $zone_text);
+    /**
+     * Helper to return image of the current image.
+     */
+    protected function _sendImage($type = 'fullsize')
+    {
+        $id = $this->getRequest()->getParam('id');
+        $item = get_record_by_id('item', $id);
 
-						$mot_left =  $zone_left + ( ($mot_start_char * $zone_width) / $zone_width_char);
-						$mot_right = $mot_left + ( ( ( $mot_width_char + 2) * $zone_width) / $zone_width_char );
-					#	print "L : $mot_left\n";
-					#	print "R : $mot_right\n";
+        $num_img = $this->getRequest()->getParam('image');
+        if ($num_img != '000') {
+            $num_img = preg_replace('`^[0]*`', '', $num_img);
+        }
+        else {
+            $num_img = '0';
+        }
+        $num_img--;
 
+        $imagesFiles = BookReader::getImagesFiles($item);
+        $image = FILES_DIR . DIRECTORY_SEPARATOR . $type . DIRECTORY_SEPARATOR . $imagesFiles[$num_img]->getDerivativeFilename();
+        $image = file_get_contents($image);
 
-						$mot_left = round($mot_left * $widths[$page_number] / $page_width);
-						$mot_right  = round( $mot_right * $widths[$page_number] / $page_width);
-					#	print "Zone texte : #$zone_text ($zone_width_char char pour $zone_width px)#\n";
-						
-						
-						$mot_top = round($zone_top * $heights[$page_number] / $page_height);
-						$mot_bottom = round($mot_top + ( $zone_height * $heights[$page_number] / $page_height  ));
-
-						$tab_zone["par"] = Array();
-						$tab_zone["par"][] = Array(
-							"t" => $zone_top,
-							"l" => $zone_left,
-							"b" => $zone_bottom,
-							"r" => $zone_right,
-							"page" => $page_number,
-							"boxes" => Array(
-									Array(
-										"r" => $mot_right,
-										"l" => $mot_left,
-										"b" => $mot_bottom,
-										"t" => $mot_top,
-										"page" => $page_number
-									)
-								)
-							);
-
-//						if ($page_number == 513)
-						if (true)
-						{
-							$sortie["matches"][] = $tab_zone;
-						}
-					}
-					elseif ($une_ligne != "")
-					{
-						print "####>>>>> PB ligne : #$une_ligne#\n";
-					}
-				}
-			}
-		}
-		
-		$tab_json = json_encode($sortie);
-		$pattern = array(',"', '{', '}');
-		$replacement = array(",\n\t\"", "{\n\t", "\n}");
-
-		print $callback."(".$tab_json.")";
-	}
-		
-	public function imageProxyAction()
-	{
-		$num_img = $this->getRequest()->getParam('image');
-		$scale = $this->getRequest()->getParam('scale');
-		if ($num_img!="000")
-		{
-			$num_img=preg_replace('`^[0]*`','',$num_img); 
-		}
-		else
-		{
-			$num_img="0";
-		}
-
-		$num_img = ($num_img-1);
-		$id = $this->getRequest()->getParam('id');
-		set_current_item(get_item_by_id($id));
-		
-		if ($scale < 1.1)
-		{
-			// De 0 à 1
-			$files=WEB_FILES ;// répertoire des images originales
-		}
-		else if ($scale < 1.4)
-		{
-			// De 1 à 2
-			$files=WEB_FULLSIZE ;// répertoire des images diff web
-		}
-		else if ($scale < 6)
-		{
-			// De 2 à 6
-			$files=WEB_FULLSIZE ;// répertoire des images diff web
-		}
-		else if ($scale < 16)
-		{
-			// De 6 à 16
-			$files=WEB_THUMBNAILS ;// répertoire des vignettes
-		}
-		else  if ($scale < 32)
-		{
-			// De 16 à 32
-			$files=WEB_THUMBNAILS ;// répertoire des vignettes
-		}
-		else
-		{
-			// Au dessus de 32 ?
-			$files=WEB_FULLSIZE ;// répertoire des images originales
-		}
-		
-		//création d'un tableau composé de l'ensemble des images de l'item consulté
-		$listing= array();
-		$i=0;
-		
-		while(loop_files_for_item($item)) {
-			$file = get_current_file();
-			if ($file->hasThumbnail())
-			{
-				//$listing[$i]=$file->archive_filename;//Création du tableau
-				$listing[$i]=item_file('Original Filename');
-			}
-			$i++;
-		}
-		//compte le nb d'imgages dans le tableau
-		$nbimg = count($listing); 
-		
-		// DESSOUS : si $listing n'est pas un tableau, message, sinon, traitement
-		if(!is_array($listing))
-		{
-			$html .="<br><br>\n";
-			$html .= "problème :-( <br><br>\n";
-			$html .= "</a>\n";
-			$html .= "</div>\n";
-		}
-		else
-		{    	
-			// TRI DE LA LISTE DES FICHIERS
-			sort($listing); 	
-		}
-		
-		$image=$listing[$num_img];
-		$db = get_db();
-		$query = $db->select()->from(array($db->Files), 'archive_filename')->where('original_filename = ?', $image)->where('item_id = ?', $id);
-		$image = $db->fetchOne($query); 
-		//$image=findImgPath ($image);
-		$image = $files."/".$image;
-
-		$image = file_get_contents($image);  	
-		$this->getResponse()->clearBody ();
-		$this->getResponse()->setHeader('Content-Type', 'image/jpeg');
-		$this->getResponse()->setBody($image); 
-	}
-	
-	public function thumbProxyAction()
-	{
-		$num_img = $this->getRequest()->getParam('image');
-		if ($num_img!="000")
-		{
-			$num_img=preg_replace('`^[0]*`','',$num_img); 
-		}
-		else
-		{
-			$num_img="0";
-		}
-		$num_img = ($num_img-1);
-		$id = $this->getRequest()->getParam('id');
-		set_current_item(get_item_by_id($id));
-		
-		$files = WEB_THUMBNAILS ;// répertoire des images originales
-		
-		//création d'un tableau composé de l'ensemble des images de l'item consulté
-		$listing= array();
-		$i=0;
-		
-		while(loop_files_for_item($item))
-		{
-			$file = get_current_file();
-			if ($file->hasThumbnail())
-			{
-				//$listing[$i]=$file->archive_filename;//Création du tableau
-				$listing[$i]=item_file('Original Filename');
-			}
-			$i++;
-		}
-		//compte le nb d'imgages dans le tableau
-		$nbimg = count($listing); 
-		
-		// DESSOUS : si $listing n'est pas un tableau, message, sinon, traitement
-		if(!is_array($listing))
-		{
-			$html .="<br><br>\n";
-			$html .= "problème :-( <br><br>\n";
-			$html .= "</a>\n";
-			$html .= "</div>\n";
-		}
-		else
-		{    	
-			// TRI DE LA LISTE DES FICHIERS
-			sort($listing); 	
-		}
-		
-		$image=$listing[$num_img];
-		$db = get_db();
-		$query = $db->select()->from(array($db->Files), 'archive_filename')->where('original_filename = ?', $image);
-		$image = $db->fetchOne($query); 
-		//$image=findImgPath ($image);
-		$image = $files."/".$image;
-		$image = file_get_contents($image);  	
-		$this->getResponse()->clearBody ();
-		$this->getResponse()->setHeader('Content-Type', 'image/jpeg');
-		$this->getResponse()->setBody($image); 
-	}
+        $this->getResponse()->clearBody ();
+        $this->getResponse()->setHeader('Content-Type', 'image/jpeg');
+        $this->getResponse()->setBody($image);
+    }
 }

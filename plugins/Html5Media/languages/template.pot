@@ -1,0 +1,103 @@
+# Translation for the Html5Media plugin for Omeka.
+# Copyright (C) 2013 John Flatness
+# This file is distributed under the GNU General Public License, v3.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Html5Media\n"
+"Report-Msgid-Bugs-To: http://github.com/zerocrates/Html5Media/issues\n"
+"POT-Creation-Date: 2013-05-14 13:53-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: Html5MediaPlugin.php:175
+msgid "Download File"
+msgstr ""
+
+#: Html5MediaPlugin.php:176
+msgid "Play/Pause"
+msgstr ""
+
+#: Html5MediaPlugin.php:177
+msgid "Mute Toggle"
+msgstr ""
+
+#: Html5MediaPlugin.php:178
+msgid "Fullscreen"
+msgstr ""
+
+#: Html5MediaPlugin.php:179
+msgid "Captions/Subtitles"
+msgstr ""
+
+#: Html5MediaPlugin.php:180
+msgid "None"
+msgstr ""
+
+#: Html5MediaPlugin.php:181
+msgid "Turn off Fullscreen"
+msgstr ""
+
+#: Html5MediaPlugin.php:182
+msgid "Go Fullscreen"
+msgstr ""
+
+#: Html5MediaPlugin.php:183
+msgid "Unmute"
+msgstr ""
+
+#: Html5MediaPlugin.php:184
+msgid "Mute"
+msgstr ""
+
+#: Html5MediaPlugin.php:185
+msgid "Download Video"
+msgstr ""
+
+#: Html5MediaPlugin.php:186
+msgid "Close"
+msgstr ""
+
+#: config-form.php:3
+msgid "Video Settings"
+msgstr ""
+
+#: config-form.php:22
+msgid "Responsive Sizing"
+msgstr ""
+
+#: config-form.php:26
+msgid ""
+"Check the box below to allow the video player to automatically match its "
+"size to its container."
+msgstr ""
+
+#: config-form.php:33 config-form.php:60 config-form.php:86
+msgid "MIME Types"
+msgstr ""
+
+#: config-form.php:41 config-form.php:68 config-form.php:94
+msgid "Extensions"
+msgstr ""
+
+#: config-form.php:49
+msgid "Audio Settings"
+msgstr ""
+
+#: config-form.php:76
+msgid "Text Settings"
+msgstr ""
+
+#: config-form.php:79
+msgid ""
+"Text files are data like subtitles and chapter names. HTML5 Media wil "
+"include them as tracks of audio or video files with the same original "
+"filename on the same item."
+msgstr ""

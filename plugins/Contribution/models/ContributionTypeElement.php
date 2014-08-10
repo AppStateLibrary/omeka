@@ -13,12 +13,13 @@
  * @package Contribution
  * @subpackage Models
  */
-class ContributionTypeElement extends Omeka_Record
+class ContributionTypeElement extends Omeka_Record_AbstractRecord
 {
     public $type_id;
     public $element_id;
     public $prompt;
     public $order;
+    public $long_text;
     
     protected $_related = array('ContributionType' => 'getType',
                                 'Element'          => 'getElement');
@@ -27,9 +28,6 @@ class ContributionTypeElement extends Omeka_Record
     {
         if(empty($this->element_id)) {
             $this->addError('element', 'You must select an element to contribute.');
-        }
-        if(empty($this->prompt)) {
-            $this->addError('prompt', 'You must provide a prompt for your contributors.');
         }
     }
 

@@ -1,27 +1,24 @@
-<?php head(array('title' => 'Browse Map','bodyid'=>'map','bodyclass' => 'browse')); ?>
+<?php 
+queue_css_file('geolocation-items-map');
 
-<div id="primary">
+$title = __('Browse Items on the Map') . ' ' . __('(%s total)', $totalItems);
+echo head(array('title' => $title, 'bodyclass' => 'map browse'));
+?>
 
-<h1>Browse Items on the Map (<?php echo $totalItems; ?> total)</h1>
+<h1><?php echo $title; ?></h1>
 
-<?php if(function_exists('public_nav_items')): ?>
-<ul class="items-nav navigation" id="secondary-nav">
-	<?php echo public_nav_items(array('Browse All' => uri('items/browse'), 'Browse by Tag' => uri('items/tags'))); ?>
-</ul>
-<?php endif; ?>
-<div class="pagination">
-    <?php echo pagination_links(); ?>
-</div><!-- end pagination -->
+<nav class="items-nav navigation secondary-nav">
+    <?php echo public_nav_items(); ?>
+</nav>
 
-<div id="map-block">
-    <?php echo geolocation_google_map('map-display', array('loadKml'=>true, 'list'=>'map-links'));?>
-</div><!-- end map_block -->
+<?php
+echo item_search_filters();
+echo pagination_links();
+?>
 
-<div id="link_block">
-    <h2>Find An Item on the Map</h2>
-    <div id="map-links"></div><!-- Used by JavaScript -->
-</div><!-- end link_block -->
+<div id="geolocation-browse">
+    <?php echo $this->googleMap('map_browse', array('list' => 'map-links', 'params' => $params)); ?>
+    <div id="map-links"><h2><?php echo __('Find An Item on the Map'); ?></h2></div>
+</div>
 
-</div><!-- end primary -->
-
-<?php foot(); ?>
+<?php echo foot(); ?>

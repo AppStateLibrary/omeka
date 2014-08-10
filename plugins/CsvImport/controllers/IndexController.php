@@ -1,223 +1,399 @@
 <?php
-
 /**
- * @version $Id$
- * @copyright Center for History and New Media, 2008
- * @license http://www.gnu.org/licenses/gpl-3.0.txt
- * @package CsvImport
- */
-
-/**
- * The CvsImport index controller class.
+ * CsvImport_IndexController class - represents the Csv Import index controller
  *
+ * @copyright Copyright 2008-2012 Roy Rosenzweig Center for History and New Media
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt GNU GPLv3
  * @package CsvImport
- * @author CHNM
- * @copyright Center for History and New Media, 2008
  */
-
-class CsvImport_IndexController extends Omeka_Controller_Action
+class CsvImport_IndexController extends Omeka_Controller_AbstractActionController
 {
-    public function indexAction() 
-    {
-        if (!$this->_hasValidPHPCliPath()) {
-            $this->redirect->goto('error');    
-        }
-        
-        // get the session and view
-        $csvImportSession = new Zend_Session_Namespace('CsvImport');
-        $view = $this->view;
-        
-        // check the form submit button
-        if (isset($_POST['csv_import_submit'])) {
+    protected $_browseRecordsPerPage = 10;
+    protected $_pluginConfig = array();
 
-            //make sure the user selected a file
-            if (trim($_POST['csv_import_file_name']) == '') {
-                
-                $this->flashError('Please select a file to import.');                
-            
-            } else {
-                    
-                // make sure the file is correctly formatted
-                $csvImportFile = new CsvImport_File($_POST['csv_import_file_name']);
-                
-                $maxRowsToValidate = 2;
-                if (!$csvImportFile->isValid($maxRowsToValidate)) {                    
-                    $this->flashError('Your file is incorrectly formatted.  Please select a valid CSV file.');
-                } else {                    
-                    // save csv file and item type to the session
-                    $csvImportSession->csvImportFile = $csvImportFile;                    
-                    $csvImportSession->csvImportItemTypeId = empty($_POST['csv_import_item_type_id']) ? 0 : $_POST['csv_import_item_type_id'];
-                    $csvImportSession->csvImportItemsArePublic = ($_POST['csv_import_items_are_public'] == '1');
-                    $csvImportSession->csvImportItemsAreFeatured = ($_POST['csv_import_items_are_featured'] == '1');
-                    $csvImportSession->csvImportCollectionId = $_POST['csv_import_collection_id'];
-                    $csvImportSession->csvImportStopImportIfFileDownloadError = $_POST['csv_import_stop_import_if_file_download_error'];
-                    //redirect to column mapping page
-                    $this->redirect->goto('map-columns');   
-                }                
-            }
-        }
-    }
-    
-    public function errorAction()
+    /**
+     * Initialize the controller.
+     */
+    public function init()
     {
-        if ($this->_hasValidPHPCliPath()) {
-            $this->redirect->goto('index');    
-        }
+        $this->session = new Zend_Session_Namespace('CsvImport');
+        $this->_helper->db->setDefaultModelName('CsvImport_Import');
     }
-    
+
+    /**
+     * Configure a new import.
+     */
+    public function indexAction()
+    {
+        $form = $this->_getMainForm();
+        $this->view->form = $form;
+
+        if (!$this->getRequest()->isPost()) {
+            return;
+        }
+
+        if (!$form->isValid($this->getRequest()->getPost())) {
+            $this->_helper->flashMessenger(__('Invalid form input. Please see errors below and try again.'), 'error');
+            return;
+        }
+
+        if (!$form->csv_file->receive()) {
+            $this->_helper->flashMessenger(__('Error uploading file. Please try again.'), 'error');
+            return;
+        }
+
+        $filePath = $form->csv_file->getFileName();
+        $columnDelimiter = $form->getValue('column_delimiter');
+
+        $file = new CsvImport_File($filePath, $columnDelimiter);
+
+        if (!$file->parse()) {
+            $this->_helper->flashMessenger(__('Your file is incorrectly formatted.')
+                . ' ' . $file->getErrorString(), 'error');
+            return;
+        }
+
+        $this->session->setExpirationHops(2);
+        $this->session->originalFilename = $_FILES['csv_file']['name'];
+        $this->session->filePath = $filePath;
+
+        $this->session->columnDelimiter = $columnDelimiter;
+        $this->session->columnNames = $file->getColumnNames();
+        $this->session->columnExamples = $file->getColumnExamples();
+
+        $this->session->fileDelimiter = $form->getValue('file_delimiter');
+        $this->session->tagDelimiter = $form->getValue('tag_delimiter');
+        $this->session->elementDelimiter = $form->getValue('element_delimiter');
+        $this->session->itemTypeId = $form->getValue('item_type_id');
+        $this->session->itemsArePublic = $form->getValue('items_are_public');
+        $this->session->itemsAreFeatured = $form->getValue('items_are_featured');
+        $this->session->collectionId = $form->getValue('collection_id');
+
+        $this->session->automapColumnNamesToElements = $form->getValue('automap_columns_names_to_elements');
+
+        $this->session->ownerId = $this->getInvokeArg('bootstrap')->currentuser->id;
+
+        // All is valid, so we save settings.
+        set_option(CsvImport_RowIterator::COLUMN_DELIMITER_OPTION_NAME, $this->session->columnDelimiter);
+        set_option(CsvImport_ColumnMap_Element::ELEMENT_DELIMITER_OPTION_NAME, $this->session->elementDelimiter);
+        set_option(CsvImport_ColumnMap_Tag::TAG_DELIMITER_OPTION_NAME, $this->session->tagDelimiter);
+        set_option(CsvImport_ColumnMap_File::FILE_DELIMITER_OPTION_NAME, $this->session->fileDelimiter);
+
+        if ($form->getValue('omeka_csv_export')) {
+            $this->_helper->redirector->goto('check-omeka-csv');
+        }
+
+        $this->_helper->redirector->goto('map-columns');
+    }
+
+    /**
+     * Map the columns for an import.
+     */
     public function mapColumnsAction()
     {
-        if (!$this->_hasValidPHPCliPath()) {
-            $this->redirect->goto('error');    
+        if (!$this->_sessionIsValid()) {
+            $this->_helper->flashMessenger(__('Import settings expired. Please try again.'), 'error');
+            $this->_helper->redirector->goto('index');
+            return;
         }
-        
+
+        require_once CSV_IMPORT_DIRECTORY . '/forms/Mapping.php';
+        $form = new CsvImport_Form_Mapping(array(
+            'itemTypeId' => $this->session->itemTypeId,
+            'columnNames' => $this->session->columnNames,
+            'columnExamples' => $this->session->columnExamples,
+            'fileDelimiter' => $this->session->fileDelimiter,
+            'tagDelimiter' => $this->session->tagDelimiter,
+            'elementDelimiter' => $this->session->elementDelimiter,
+            'automapColumnNamesToElements' => $this->session->automapColumnNamesToElements
+        ));
+        $this->view->form = $form;
+
+        if (!$this->getRequest()->isPost()) {
+            return;
+        }
+        if (!$form->isValid($this->getRequest()->getPost())) {
+            $this->_helper->flashMessenger(__('Invalid form input. Please try again.'), 'error');
+            return;
+        }
+
+        $columnMaps = $form->getColumnMaps();
+        if (count($columnMaps) == 0) {
+            $this->_helper->flashMessenger(__('Please map at least one column to an element, file, or tag.'), 'error');
+            return;
+        }
+
+        $csvImport = new CsvImport_Import();
+        foreach ($this->session->getIterator() as $key => $value) {
+            $setMethod = 'set' . ucwords($key);
+            if (method_exists($csvImport, $setMethod)) {
+                $csvImport->$setMethod($value);
+            }
+        }
+        $csvImport->setColumnMaps($columnMaps);
+        if ($csvImport->queue()) {
+            $this->_dispatchImportTask($csvImport, CsvImport_ImportTask::METHOD_START);
+            $this->_helper->flashMessenger(__('Import started. Reload this page for status updates.'), 'success');
+        } else {
+            $this->_helper->flashMessenger(__('Import could not be started. Please check error logs for more details.'), 'error');
+        }
+
+        $this->session->unsetAll();
+        $this->_helper->redirector->goto('browse');
+    }
+
+    /**
+     * For import of Omeka.net CSV.
+     * Check if all needed Elements are present.
+     */
+    public function checkOmekaCsvAction()
+    {
+        $elementTable = get_db()->getTable('Element');
+        $skipColumns = array('itemType',
+                             'collection',
+                             'tags',
+                             'public',
+                             'featured',
+                             'file');
+
+        $skipColumnsWrapped = array();
+        foreach($skipColumns as $skipColumn) {
+            $skipColumnsWrapped[] = "'" . $skipColumn . "'";
+        }
+        $skipColumnsText = '( ' . implode(',  ', $skipColumnsWrapped) . ' )';
+
+        if (empty($this->session->columnNames)) {
+            $this->_helper->redirector->goto('index');
+        }
+
         $hasError = false;
-        
-        // get the session and view        
-        $csvImportSession = new Zend_Session_Namespace('CsvImport');
-        $view = $this->view;
-        
-        // get the session variables
-        $itemsArePublic = $csvImportSession->csvImportItemsArePublic;
-        $itemsAreFeatured = $csvImportSession->csvImportItemsAreFeatured;
-        $collectionId = $csvImportSession->csvImportCollectionId;
-        $stopImportIfFileDownloadError = $csvImportSession->csvImportStopImportIfFileDownloadError;
-        
-        // get the csv file to import
-        $csvImportFile = $csvImportSession->csvImportFile;
-                
-        // pass the csv file and item type to the view
-        $view->csvImportFile = $csvImportFile;
-        $view->csvImportItemTypeId = $csvImportSession->csvImportItemTypeId;
-        $view->csvImportFileImport = null;        
-                
-        // process submitted column mappings
-        if (isset($_POST['csv_import_submit'])) {
-            
-            // create the column maps
-            $columnMaps = array();
-            $colCount = $csvImportFile->getColumnCount();
-            for($colIndex = 0; $colIndex < $colCount; $colIndex++) {
-                
-                // if applicable, add mapping to tags
-                if ($_POST[CSV_IMPORT_COLUMN_MAP_TAG_CHECKBOX_PREFIX . $colIndex] == '1') {
-                    $columnMap = new CsvImport_ColumnMap($colIndex, CsvImport_ColumnMap::TARGET_TYPE_TAG);
-                    $columnMaps[] = $columnMap;
+        foreach ($this->session->columnNames as $columnName){
+            if (!in_array($columnName, $skipColumns)) {
+                $data = explode(':', $columnName);
+                if (count($data) != 2) {
+                    $this->_helper->flashMessenger(__('Invalid column names. Column names must either be one of the following %s, or have the following format: {ElementSetName}:{ElementName}', $skipColumnsText), 'error');
+                    $hasError = true;
+                    break;
                 }
-                
-                // if applicable, add mapping to file
-                if ($_POST[CSV_IMPORT_COLUMN_MAP_FILE_CHECKBOX_PREFIX . $colIndex] == '1') {
-                    $columnMap = new CsvImport_ColumnMap($colIndex, CsvImport_ColumnMap::TARGET_TYPE_FILE);
-                    $columnMaps[] = $columnMap;
-                }
-                                
-                // if applicable, add mapping to elements
-                $rawElementIds = explode(',', $_POST[CSV_IMPORT_COLUMN_MAP_ELEMENTS_HIDDEN_INPUT_PREFIX . $colIndex]);
-                foreach($rawElementIds as $rawElementId) {
-                    $elementId = trim($rawElementId);
-                    if ($elementId) {
-                        $columnMap = new CsvImport_ColumnMap($colIndex, CsvImport_ColumnMap::TARGET_TYPE_ELEMENT);
-                        $columnMap->addElementId($elementId);
-                        $columnMap->setDataIsHtml((boolean)$_POST[CSV_IMPORT_COLUMN_MAP_HTML_CHECKBOX_PREFIX . $colIndex]);
-                        $columnMaps[] = $columnMap;                        
+            }
+        }
+
+        if (!$hasError) {
+            foreach ($this->session->columnNames as $columnName){
+                if (!in_array($columnName, $skipColumns)) {
+                    $data = explode(':', $columnName);
+                    //$data is like array('Element Set Name', 'Element Name');
+                    $elementSetName = $data[0];
+                    $elementName = $data[1];
+                    $element = $elementTable->findByElementSetNameAndElementName($elementSetName, $elementName);
+                    if (empty($element)) {
+                        $this->_helper->flashMessenger(__('Element "%s" is not found in element set "%s"', array($elementName, $elementSetName)), 'error');
+                         $hasError = true;
                     }
                 }
-            }           
-            
-            // make sure the user maps have at least one column
-            if (count($columnMaps) == 0) {
-                $this->flashError('Please map at least one column to an element, file, or tag.');
-                $hasError = true;
             }
-            
-            // if there are no errors with the column mappings, then run the import and goto the status page
-            if (!$hasError) {
-                
-                // do the import in the background
-                $csvImport = new CsvImport_Import();
-                $csvImport->initialize($csvImportFile->getFileName(), $csvImportSession->csvImportItemTypeId, $collectionId, $itemsArePublic, $itemsAreFeatured, $stopImportIfFileDownloadError, $columnMaps);
-                $csvImport->status = CsvImport_Import::STATUS_IN_PROGRESS_IMPORT;
-                $csvImport->save();
-                
-                // dispatch the background process to import the items
-                $user = current_user();
-                $args = array();
-                $args['import_id'] = $csvImport->id;
-                ProcessDispatcher::startProcess('CsvImport_ImportProcess', $user, $args);
-                
-                //redirect to column mapping page
-                $this->flashSuccess("Successfully started the import. Reload this page for status updates.");
-                $this->redirect->goto('status');
-                
-            }  
-        }   
+        }
+
+        if (!$hasError) {
+            $this->_helper->redirector->goto('omeka-csv');
+        }
     }
-    
+
+    /**
+     * Create and queue a new import from Omeka.net.
+     */
+    public function omekaCsvAction()
+    {
+        // specify the export format's file and tag delimiters
+        // do not allow the user to specify it
+        $fileDelimiter = ',';
+        $tagDelimiter = ',';
+
+        $headings = $this->session->columnNames;
+        $columnMaps = array();
+        foreach ($headings as $heading) {
+            switch ($heading) {
+                case 'collection':
+                    $columnMaps[] = new CsvImport_ColumnMap_Collection($heading);
+                    break;
+                case 'itemType':
+                    $columnMaps[] = new CsvImport_ColumnMap_ItemType($heading);
+                    break;
+                case 'file':
+                    $columnMaps[] = new CsvImport_ColumnMap_File($heading, $fileDelimiter);
+                    break;
+                case 'tags':
+                    $columnMaps[] = new CsvImport_ColumnMap_Tag($heading, $tagDelimiter);
+                    break;
+                case 'public':
+                    $columnMaps[] = new CsvImport_ColumnMap_Public($heading);
+                    break;
+                case 'featured':
+                    $columnMaps[] = new CsvImport_ColumnMap_Featured($heading);
+                    break;
+                default:
+                    $columnMaps[] = new CsvImport_ColumnMap_ExportedElement($heading);
+                    break;
+            }
+        }
+        $csvImport = new CsvImport_Import();
+
+        //this is the clever way that mapColumns action sets the values passed along from indexAction
+        //many will be irrelevant here, since CsvImport allows variable itemTypes and Collection
+
+        //@TODO: check if variable itemTypes and Collections breaks undo. It probably should, actually
+        foreach ($this->session->getIterator() as $key => $value) {
+            $setMethod = 'set' . ucwords($key);
+            if (method_exists($csvImport, $setMethod)) {
+                $csvImport->$setMethod($value);
+            }
+        }
+        $csvImport->setColumnMaps($columnMaps);
+        if ($csvImport->queue()) {
+            $this->_dispatchImportTask($csvImport, CsvImport_ImportTask::METHOD_START);
+            $this->_helper->flashMessenger(__('Import started. Reload this page for status updates.'), 'success');
+        } else {
+            $this->_helper->flashMessenger(__('Import could not be started. Please check error logs for more details.'), 'error');
+        }
+        $this->session->unsetAll();
+        $this->_helper->redirector->goto('browse');
+    }
+
+    /**
+     * Browse the imports.
+     */
+    public function browseAction()
+    {
+        if (!$this->_getParam('sort_field')) {
+            $this->_setParam('sort_field', 'added');
+            $this->_setParam('sort_dir', 'd');
+        }
+        parent::browseAction();
+    }
+
+    /**
+     * Undo the import.
+     */
     public function undoImportAction()
     {
-        if (!$this->_hasValidPHPCliPath()) {
-            $this->redirect->goto('error');    
+        $csvImport = $this->_helper->db->findById();
+        if ($csvImport->queueUndo()) {
+            $this->_dispatchImportTask($csvImport, CsvImport_ImportTask::METHOD_UNDO);
+            $this->_helper->flashMessenger(__('Undo import started. Reload this page for status updates.'), 'success');
+        } else {
+            $this->_helper->flashMessenger(__('Undo import could not be started. Please check error logs for more details.'), 'error');
         }
-        
-        $db = get_db();
-        $cit = $db->getTable('CsvImport_Import');
-        $importId = $this->_getParam("id");
-        $csvImport = $cit->find($importId);
-        if ($csvImport) {
-            
-            // change the status of the import
-            $csvImport->status = CsvImport_Import::STATUS_IN_PROGRESS_UNDO_IMPORT;
-            $csvImport->save();
 
-            // // dispatch the background process to undo the import
-            $user = current_user();
-            $args = array();
-            $args['import_id'] = $importId;
-            ProcessDispatcher::startProcess('CsvImport_UndoImportProcess', $user, $args);
-        }
-        $this->flashSuccess("Successfully started to undo the import. Reload this page for status updates.");
-        $this->redirect->goto('status');
+        $this->_helper->redirector->goto('browse');
     }
-    
+
+    /**
+     * Clear the import history.
+     */
     public function clearHistoryAction()
     {
-        if (!$this->_hasValidPHPCliPath()) {
-            $this->redirect->goto('error');    
+        $csvImport = $this->_helper->db->findById();
+        $importedItemCount = $csvImport->getImportedItemCount();
+
+        if ($csvImport->isUndone() ||
+            $csvImport->isUndoImportError() ||
+            $csvImport->isOtherError() ||
+            ($csvImport->isImportError() && $importedItemCount == 0)) {
+            $csvImport->delete();
+            $this->_helper->flashMessenger(__('Cleared import from the history.'), 'success');
+        } else {
+            $this->_helper->flashMessenger(__('Cannot clear import history.'), 'error');
         }
-        
-        $db = get_db();
-        $cit = $db->getTable('CsvImport_Import');
-        $importId = $this->_getParam("id");
-        $csvImport = $cit->find($importId);
-        if ($csvImport) {
-            if ($csvImport->status == CsvImport_Import::STATUS_COMPLETED_UNDO_IMPORT || 
-                $csvImport->status == CsvImport_Import::STATUS_IMPORT_ERROR_INVALID_CSV_FILE) {
-                // delete the import object
-                $csvImport->delete();
-                $this->flashSuccess("Successfully cleared the history of the import.");
+        $this->_helper->redirector->goto('browse');
+    }
+
+    /**
+     * Get the main Csv Import form.
+     *
+     * @return CsvImport_Form_Main
+     */
+    protected function _getMainForm()
+    {
+        require_once CSV_IMPORT_DIRECTORY . '/forms/Main.php';
+        $csvConfig = $this->_getPluginConfig();
+        $form = new CsvImport_Form_Main($csvConfig);
+        return $form;
+    }
+
+    /**
+      * Returns the plugin configuration
+      *
+      * @return array
+      */
+    protected function _getPluginConfig()
+    {
+        if (!$this->_pluginConfig) {
+            $config = $this->getInvokeArg('bootstrap')->config->plugins;
+            if ($config && isset($config->CsvImport)) {
+                $this->_pluginConfig = $config->CsvImport->toArray();
+            }
+            if (!array_key_exists('fileDestination', $this->_pluginConfig)) {
+                $this->_pluginConfig['fileDestination'] =
+                    Zend_Registry::get('storage')->getTempDir();
             }
         }
-        $this->redirect->goto('status');
+        return $this->_pluginConfig;
     }
-    
-    public function statusAction() 
+
+    /**
+     * Returns whether the session is valid.
+     *
+     * @return boolean
+     */
+    protected function _sessionIsValid()
     {
-        if (!$this->_hasValidPHPCliPath()) {
-            $this->redirect->goto('error');    
-        }
-                
-        //get the imports
-        $this->view->csvImports =  CsvImport_Import::getImports();
-    }
-    
-    private function _hasValidPHPCliPath()
-    {
-        try {
-            $p = ProcessDispatcher::getPHPCliPath();
-        } catch (Exception $e) {
-            $this->flashError('Your PHP-CLI path setting is invalid.'.  "\n"  . 'Please change the setting in ' . CONFIG_DIR . DIRECTORY_SEPARATOR . 'config.ini' . "\n" . 'If you do not know how to do this, please check with your system or server administrator.');
-            return false;
+        $requiredKeys = array('itemsArePublic',
+                              'itemsAreFeatured',
+                              'collectionId',
+                              'itemTypeId',
+                              'ownerId');
+        foreach ($requiredKeys as $key) {
+            if (!isset($this->session->$key)) {
+                return false;
+            }
         }
         return true;
+    }
+
+    /**
+     * Dispatch an import task.
+     *
+     * @param CsvImport_Import $csvImport The import object
+     * @param string $method The method name to run in the CsvImport_Import object
+     */
+    protected function _dispatchImportTask($csvImport, $method = null)
+    {
+        if ($method === null) {
+            $method = CsvImport_ImportTask::METHOD_START;
+        }
+        $csvConfig = $this->_getPluginConfig();
+
+        $options = array(
+            'importId' => $csvImport->id,
+            'memoryLimit' => @$csvConfig['memoryLimit'],
+            'batchSize' => @$csvConfig['batchSize'],
+            'method' => $method,
+        );
+
+        $jobDispatcher = Zend_Registry::get('job_dispatcher');
+        $jobDispatcher->setQueueName(CsvImport_ImportTask::QUEUE_NAME);
+        try {
+            $jobDispatcher->sendLongRunning('CsvImport_ImportTask',
+                array(
+                    'importId' => $csvImport->id,
+                    'memoryLimit' => @$csvConfig['memoryLimit'],
+                    'batchSize' => @$csvConfig['batchSize'],
+                    'method' => $method,
+                )
+            );
+        } catch (Exception $e) {
+            $csvImport->setStatus(CsvImport_Import::OTHER_ERROR);
+            throw $e;
+        }
     }
 }

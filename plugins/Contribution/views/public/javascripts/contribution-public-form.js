@@ -1,3 +1,9 @@
+
+function toggleProfileEdit() {
+    jQuery('div.contribution-userprofile').toggle();
+    jQuery('span.contribution-userprofile-visibility').toggle();
+}
+
 function enableContributionAjaxForm(url) {
     jQuery(document).ready(function() {
         // Div that will contain the AJAX'ed form.
@@ -7,7 +13,7 @@ function enableContributionAjaxForm(url) {
         // Elements that should be hidden when there is no type form on the page.
         var elementsToHide = jQuery('#contribution-confirm-submit, #contribution-contributor-metadata');
         // Duration of hide/show animation.
-        var duration = 400;
+        var duration = 0;
 
         // Remove the noscript-fallback type submit button.
         jQuery('#submit-type').remove();
@@ -23,7 +29,11 @@ function enableContributionAjaxForm(url) {
                        form.append(data); 
                        form.show(duration, function() {
                            form.trigger('contribution-form-shown');
+                           form.trigger('omeka:tabselected');
                            elementsToHide.show();
+                           //in case profile info is also being added, do the js for that form
+                           jQuery(form).trigger('omeka:elementformload');
+                           jQuery('.contribution-userprofile-visibility').click(toggleProfileEdit);
                        });
                     });
                 }
@@ -31,3 +41,9 @@ function enableContributionAjaxForm(url) {
         });
     });
 }
+
+jQuery(document).ready(function() {
+    jQuery('.contribution-userprofile-visibility').click(toggleProfileEdit);
+    var form = jQuery('#contribution-type-form');
+    jQuery(form).trigger('omeka:elementformload');
+});

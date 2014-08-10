@@ -1,6 +1,6 @@
-<?php head(); ?>
-<h1><?php echo settings('simple_contact_form_contact_page_title'); ?></h1>
+<?php echo head(); ?>
 <div id="primary">
+    <h1><?php echo html_escape(get_option('simple_contact_form_contact_page_title')); ?></h1>
     
 <div id="simple-contact">
 	<div id="form-instructions">
@@ -19,24 +19,25 @@
 		
         <div class="field">
             <?php 
-            echo $this->formLabel('email', 'Your Email: ');
+                    echo $this->formLabel('email', 'Your Email: ');
 		    echo $this->formText('email', $email, array('class'=>'textinput'));  ?>
         </div>
         
 		<div class="field">
 		  <?php 
 		    echo $this->formLabel('message', 'Your Message: ');
-		    echo $this->formTextarea('message', $message, array('class'=>'textinput')); ?>
+		    echo $this->formTextarea('message', $message, array('class'=>'textinput', 'rows' => '10')); ?>
 		</div>    
 		
 		</fieldset>
-		
-		<fieldset>
-		    
-		<div class="field">
-		  <?php echo $captcha; ?>
-		</div>		
-		
+
+        <fieldset>
+        <?php if ($captcha): ?>
+        <div class="field">
+            <?php echo $captcha; ?>
+        </div>
+        <?php endif; ?>
+
 		<div class="field">
 		  <?php echo $this->formSubmit('send', 'Send Message'); ?>
 		</div>
@@ -46,4 +47,4 @@
 </div>
 
 </div>
-<?php foot(); ?>
+<?php echo foot();

@@ -1,9 +1,7 @@
 <?php
 /**
- * @package Reports
- * @subpackage Controllers
- * @copyright Copyright (c) 2009 Center for History and New Media
- * @license http://www.gnu.org/licenses/gpl-3.0.txt
+ * @copyright Copyright 2007-2012 Roy Rosenzweig Center for History and New Media
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt GNU GPLv3
  */
  
 /**
@@ -12,32 +10,44 @@
  * @package Reports
  * @subpackage Controllers
  */
-class Reports_FilesController extends Omeka_Controller_Action
+class Reports_FilesController extends Omeka_Controller_AbstractActionController
 {
     /**
      * Sets the model class for the files controller.
      */
     public function init()
     {
-        $this->_modelClass = 'ReportsFile';
+        $this->_helper->db->setDefaultModelName('Reports_File');
+    }
+
+    public function showAction()
+    {
+        $reportsFile = $this->_helper->db->findById();
+        $g = $reportsFile->getGenerator();        
+        $storage = $g->getStorage();        
+        $storagePrefixDir = $g->getStoragePrefixDir();
+        $destPath = $storagePrefixDir . '/' . $reportsFile->filename;
+        $uri = $storage->getUri($destPath);
+                
+        return $this->_helper->redirector->gotoUrl($uri);
     }
     
     /**
-     * Deletes a ReportsFile model and deletes the underlying file.
+     * Deletes a Reports_File instance and deletes the underlying file.
      */
     public function deleteAction()
     {
-        $reportFile = $this->findById();
+        $reportFile = $this->_helper->db->findById();
         $report = $reportFile->getReport();
-        
-        $filename = REPORTS_SAVE_DIRECTORY.DIRECTORY_SEPARATOR.$reportFile->filename;
         $reportFile->delete();
-        if (is_writable($filename)) {
-            unlink($filename);
-        }
-        
-        $this->redirect->gotoRoute(array('id' => "$report->id",
-                                         'action' => 'show'),
-                                   'reports-id-action');
+        $this->_helper->redirector->gotoRoute(
+            array(
+                'module' => 'reports',
+                'controller' => 'index',
+                'id' => $report->id,
+                'action' => 'show',
+            ),
+            'default'
+        );
     }
 }

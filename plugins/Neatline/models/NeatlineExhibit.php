@@ -1,514 +1,303 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4; */
 
 /**
- * Record class for exhibits.
- *
- * PHP version 5
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by
- * applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
- * OF ANY KIND, either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
- *
  * @package     omeka
  * @subpackage  neatline
- * @author      Scholars' Lab <>
- * @author      Bethany Nowviskie <bethany@virginia.edu>
- * @author      Adam Soroka <ajs6f@virginia.edu>
- * @author      David McClure <david.mcclure@virginia.edu>
- * @copyright   2011 Rector and Board of Visitors, University of Virginia
- * @license     http://www.apache.org/licenses/LICENSE-2.0.html Apache 2 License
+ * @copyright   2014 Rector and Board of Visitors, University of Virginia
+ * @license     http://www.apache.org/licenses/LICENSE-2.0.html
  */
 
-class NeatlineExhibit extends Omeka_Record implements Zend_Acl_Resource_Interface
+class NeatlineExhibit extends Neatline_Row_Expandable
+    implements Zend_Acl_Resource_Interface
 {
 
-    CONST RESOURCE_ID = 'Neatline_Index';
 
-    /**
-     * Record attributes.
-     */
-
+    public $owner_id = 0;
     public $added;
     public $modified;
-    public $name;
-    public $description;
+    public $published;
+    public $item_query;
+    public $spatial_layers;
+    public $spatial_layer;
+    public $image_layer;
+    public $image_height;
+    public $image_width;
+    public $zoom_levels = 20;
+    public $wms_address;
+    public $wms_layers;
+    public $widgets;
+    public $title;
     public $slug;
+    public $narrative;
+    public $spatial_querying = 1;
     public $public = 0;
-    public $query;
-    public $creator_id = 0;
+    public $styles;
+    public $map_focus;
+    public $map_zoom;
 
-    // Foreign keys.
-    public $image_id;
-
-    // Layout parameters.
-    public $top_element = 'map';
-    public $items_h_pos = 'right';
-    public $items_v_pos = 'bottom';
-    public $items_height = 'full';
-    public $h_percent;
-    public $v_percent;
-
-    // Viewport presence.
-    public $is_map = 1;
-    public $is_timeline = 0;
-    public $is_items = 0;
-
-    // Map position defaults.
-    public $default_map_bounds;
-    public $default_map_zoom;
-
-    // Timeline position defaults.
-    public $default_focus_date;
-    public $default_timeline_zoom;
-
-    // Timeline layout parameters.
-    public $is_context_band = 1;
-    public $default_context_band_unit;
-    public $default_context_band_height;
-
-    // Default styles.
-    public $default_vector_color;
-    public $default_stroke_color;
-    public $default_highlight_color;
-    public $default_vector_opacity;
-    public $default_select_opacity;
-    public $default_stroke_opacity;
-    public $default_graphic_opacity;
-    public $default_stroke_width;
-    public $default_point_radius;
-    public $default_base_layer = 2;
 
     /**
-     * Valid style attribute names.
+     * If the exhibit is being published to the public site for the first
+     * time, set the `published` timestamp.
+     *
+     * @param array $values The POST/PUT data.
      */
-    private static $styles = array(
-        'default_vector_color',
-        'default_vector_opacity',
-        'default_stroke_color',
-        'default_stroke_opacity',
-        'default_stroke_width',
-        'default_select_opacity',
-        'default_graphic_opacity',
-        'default_point_radius',
-        'default_highlight_color',
-        'default_context_band_unit',
-        'default_context_band_height'
-    );
-
-    /**
-     * Mixin initializer.
-     *
-     * Adds the PublicFeatured mixin.
-     */
-    protected function _initializeMixins()
-    {
-        $this->_mixins[] = new PublicFeatured($this);
-    }
-
-    /**
-     * Things to do in the beforeInsert() hook:
-     *
-     * Use the current datetime for 'added' and 'modified'.
-     *
-     * @since 1.0
-     * @return void
-     */
-    protected function beforeInsert()
-    {
-        $now = Zend_Date::now()->toString(self::DATE_FORMAT);
-        $this->added = $now;
-        $this->modified = $now;
-        if (!$this->creator_id && ($user = Omeka_Context::getInstance()->getCurrentUser())) {
-            $this->setAddedBy($user);
-        }
-    }
-
-    /**
-     * Things to do in the beforeSave() hook:
-     *
-     * Explicitly set the modified timestamp.
-     *
-     * @since 1.0
-     * @return void
-     */
-    protected function beforeSave()
-    {
-        $this->_checkDefaultFocusDate();
-        $this->modified = Zend_Date::now()->toString(self::DATE_FORMAT);
-    }
-
-    /**
-     * Fetch the parent image.
-     *
-     * @return Omeka_record The map.
-     */
-    public function getImage()
+    public function saveForm($values)
     {
 
-        if (!is_null($this->image_id)) {
-            return $this->getTable('File')->find($this->image_id);
+        // Assign the values.
+        $this->setArray($values);
+
+        // If the exhibit is being set "public" for the first time, set the
+        // `published` timestamp to the current date.
+
+        if (is_null($this->published) && $this->public == 1) {
+            $this->published = date(self::DATE_FORMAT);
         }
 
-        return null;
-
-    }
-
-    /**
-     * Save default viewport positions.
-     *
-     * @param string $mapCenter The center for the map.
-     * @param integer $mapZoom The integer zoom value.
-     * @param string $baseLayer The name of the base layer.
-     * @param string $timelineCenter The timestamp for the timeline focus.
-     * @param string $timelineZoom The timeline zoom level.
-     *
-     * @return Omeka_record The map.
-     */
-    public function saveViewportPositions(
-        $mapCenter,
-        $mapZoom,
-        $baseLayer,
-        $timelineCenter,
-        $timelineZoom
-    )
-    {
-
-        // Set values.
-        $this->default_map_bounds = $mapCenter;
-        $this->default_map_zoom = intval($mapZoom);
-        $this->default_focus_date = $timelineCenter;
-        $this->default_timeline_zoom = $timelineZoom;
-        $this->setBaseLayerByName($baseLayer);
         $this->save();
 
     }
 
-    /**
-     * Save viewport arrangement.
-     *
-     * @param boolean $isMap True if map is present.
-     * @param boolean $isTimeline True if timeline is present.
-     * @param boolean $isItems True if items is present.
-     * @param string $topElement 'map' or 'timeline'.
-     * @param string $itemsHorizPos 'left' or 'right'.
-     * @param string $itemsVertPos 'top' or 'bottom'.
-     * @param string $itemsHeight 'full' or 'partial'.
-     *
-     * @return Omeka_record The map.
-     */
-    public function saveViewportArrangement(
-        $isMap,
-        $isTimeline,
-        $isItems,
-        $topElement,
-        $itemsHorizPos,
-        $itemsVertPos,
-        $itemsHeight,
-        $hPercent,
-        $vPercent
-    )
-    {
-
-        // Set values.
-        $this->is_map =             $isMap;
-        $this->is_timeline =        $isTimeline;
-        $this->is_items =           $isItems;
-        $this->top_element =        $topElement;
-        $this->items_h_pos =        $itemsHorizPos;
-        $this->items_v_pos =        $itemsVertPos;
-        $this->items_height =       $itemsHeight;
-        $this->h_percent =          $hPercent;
-        $this->v_percent =          $vPercent;
-        $this->save();
-
-    }
 
     /**
-     * Set a style attribute. Only set a value if it is different from
-     * the system default. Return true if a row value is set.
+     * Get the number of active records in the exhibit.
      *
-     * @param string style The name of the style.
-     * @param mixed $value The value to set.
-     *
-     * @return boolean True if the set succeeds.
-     */
-    public function setStyle($style, $value)
-    {
-
-        // If a non-style property is passed, return false.
-        if (!in_array('default_' . $style, self::$styles)) {
-            return false;
-        }
-
-        // If the value does not match the system default.
-        else if ($value != get_option($style)) {
-            $this['default_' . $style] = $value;
-            return true;
-        }
-
-        // If the value matches the system default and there is an existing
-        // row-level value on the exhibit.
-        else if ($value == get_option($style) &&
-            !is_null($this['default_' . $style])) {
-                $this['default_' . $style] = null;
-                return true;
-        }
-
-        return false;
-
-    }
-
-    /**
-     * Set the current baselayer by name.
-     *
-     * @param string name The name.
-     *
-     * @param User $user
-     */
-    public function setBaseLayerByName($name)
-    {
-
-        // Get the base layers table, get the record.
-        $_layersTable = $this->getTable('NeatlineBaseLayer');
-        $baseLayer = $_layersTable->getLayerByName($name);
-
-        // Set key.
-        if ($baseLayer) {
-            $this->default_base_layer = $baseLayer->id;
-        }
-
-    }
-
-    /**
-     * Get a style attribute. Look for exhibit-specific default, and
-     * fall back on system defaults when local value is unset.
-     *
-     * @param string style The name of the style.
-     *
-     * @return mixed The style.
-     */
-    public function getStyle($style)
-    {
-
-        // If there is a row value.
-        if (!is_null($this['default_' . $style])) {
-            return $this['default_' . $style];
-        }
-
-        // Fall back to system default.
-        else {
-            return get_option($style);
-        }
-
-    }
-
-    /**
-     * Check whether a given record is active on the map or timeline.
-     *
-     * @param Omeka_record $item The item record.
-     * @param Omeka_record $viewport 'space', 'time', 'items'.
-     *
-     * @return boolean True if the record is active.
-     */
-    public function getRecordStatus($item, $viewport)
-    {
-
-        // Get the data record table.
-        $_recordsTable = $this->getTable('NeatlineDataRecord');
-
-        // Get the status.
-        return $_recordsTable->getRecordStatus($item, $this, $viewport);
-
-    }
-
-    /**
-     * Return the id of the data record for the passed item in the current
-     * exhibit. If there is no record, return null.
-     *
-     * @param Omeka_record $item The item record.
-     *
-     * @return integer $id The id.
-     */
-    public function getRecordIdByItem($item)
-    {
-
-        // Get the data record table.
-        $_recordsTable = $this->getTable('NeatlineDataRecord');
-
-        // Try to get a record.
-        $record = $_recordsTable->getRecordByItemAndExhibit($item, $this);
-
-        return ($record) ? $record->id : null;
-
-    }
-
-    /**
-     * Return the total number of data records.
-     *
-     * @return integer $id The record count.
+     * @return integer The record count.
      */
     public function getNumberOfRecords()
     {
-
-        // Get the data record table and query for active records.
-        $_recordsTable = $this->getTable('NeatlineDataRecord');
-        $records = $_recordsTable->getActiveRecordsByExhibit($this);
-
-        return ($records) ? count($records) : 0;
-
+        return $this->getTable('NeatlineRecord')->count(array(
+            'exhibit_id' => $this->id
+        ));
     }
 
+
     /**
-     * Get the base layer record.
+     * Get the routing parameters or the URL string for the exhibit.
      *
-     * @return Omeka_record The record.
+     * @param string $action The controller action.
      */
-    public function getBaseLayer()
+    public function getRecordUrl($action = 'show')
+    {
+        $urlHelper = new Omeka_View_Helper_Url;
+        $params = array('action' => $action, 'id' => $this->id);
+        return $urlHelper->url($params, 'neatlineActionId');
+    }
+
+
+    /**
+     * Check whether a widget is enabled.
+     *
+     * @param string $widget The id of the widget.
+     * @return boolean True if the widget is enabled.
+     */
+    public function hasWidget($id)
+    {
+        return in_array($id, nl_explode($this->widgets));
+    }
+
+
+    /**
+     * Update records in an exhibit according to the style definitions in the
+     * `styles` CSS. For example, if `styles` is:
+     *
+     * .tag {
+     *   fill-color: #ffffff;
+     *   stroke-color: auto;
+     * }
+     *
+     * The `fill_color` on records tagged with `tag` will be set to `#ffffff`,
+     * but the stroke color will be left as-is since no explicit value is set
+     * in the CSS.
+     */
+    public function pushStyles()
     {
 
-        // Get the data record table and query for active records.
-        $_layersTable = $this->getTable('NeatlineBaseLayer');
+        // Parse the stylesheet.
+        $css = nl_readCSS($this->styles);
 
-        // If exhibit value is null, get and return default.
-        if (is_null($this->default_base_layer)) {
-            return $_layersTable->fetchObject(
-                $_layersTable->getSelect()->where('name = "Google Physical"')
+        // Load records table.
+        $recordsTable = $this->getTable('NeatlineRecord');
+
+        // Gather style columns.
+        $valid = nl_getStyles();
+
+        foreach ($css as $tag => $rules) {
+
+            $where = array('exhibit_id = ?' => $this->id);
+
+            // If selector is `all`, update all records in the exhibit;
+            // otherwise, just match records with the tag.
+            if ($tag != 'all') {
+                $where['MATCH (tags) AGAINST (? IN BOOLEAN MODE)'] = $tag;
+            }
+
+            // Walk valid CSS rules.
+            $set = array();
+            foreach ($rules as $prop => $val) {
+                if (in_array($prop, $valid)) {
+
+                    // Push value if not `auto` or `none`.
+                    if ($val != 'auto' && $val != 'none') {
+                        $set[$prop] = $val;
+                    }
+
+                    // If `none`, push NULL.
+                    else if ($val == 'none') {
+                        $set[$prop] = null;
+                    }
+
+                }
+            }
+
+            // Update records.
+            if (!empty($set)) $recordsTable->update(
+                $recordsTable->getTableName(), $set, $where
             );
-        }
 
-        // If exhibit value is set, return the setting.
-        else {
-            return $_layersTable->find($this->default_base_layer);
         }
 
     }
 
+
     /**
-     * Get the horizontal and vertical viewport percentages.
+     * Update the exhibit stylesheet with values from a specific record. For
+     * example, if `styles` is:
      *
-     * @return array $proportions array('horizontal' => integer,
-     * 'vertical' => integer).
+     * .tag {
+     *   fill-color: #111111;
+     *   stroke-color: #222222;
+     * }
+     *
+     * And the record is tagged with `tag` has a `fill_color` of `#333333` and
+     * a `stroke_color` of `#444444`, the stylesheet would be updated to:
+     *
+     * .tag {
+     *   fill-color: #333333;
+     *   stroke-color: #444444;
+     * }
+     *
+     * @param NeatlineRecord $record The record to update from.
      */
-    public function getViewportProportions()
+    public function pullStyles($record)
     {
 
-        // Shell out array with defaults.
-        $proportions = array(
-            'horizontal' =>     get_option('h_percent'),
-            'vertical' =>       get_option('v_percent')
+        // Parse the stylesheet.
+        $css = nl_readCSS($this->styles);
+
+        // Explode record tags.
+        $tags = nl_explode($record->tags);
+
+        // Gather style columns.
+        $valid = nl_getStyles();
+
+        foreach ($css as $selector => $rules) {
+
+            // Is the record tagged with the selector?
+            if (in_array($selector, $tags) || $selector == 'all') {
+
+                // Scan valid rule definitions.
+                foreach ($rules as $prop => $val) {
+
+                    // Is the property valid?
+                    if (in_array($prop, $valid)) {
+
+                        // Get the record value.
+                        $value = !is_null($record->$prop) ?
+                            $record->$prop : 'none';
+
+                        // Update the CSS.
+                        $css[$selector][$prop] = $value;
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        // Recompile the stylesheet.
+        $this->styles = nl_writeCSS($css);
+
+    }
+
+
+    /**
+     * Measure the size of the image defined by `image_layer`. Wrapped in a
+     * try/catch so that it's possible to work with exhibits offline.
+     */
+    public function compileImageSize()
+    {
+        if (!is_null($this->image_layer)) {
+            try {
+                $size = getimagesize($this->image_layer);
+                $this->image_height = $size[1];
+                $this->image_width  = $size[0];
+            } catch (Exception $e) {}
+        }
+    }
+
+
+    /**
+     * Delete all records that belong to the exhibit.
+     */
+    public function deleteChildRecords()
+    {
+
+        // Get records table and name.
+        $recordsTable = $this->getTable('NeatlineRecord');
+        $rName = $recordsTable->getTableName();
+
+        // Gather record expansion tables.
+        foreach (nl_getRecordExpansions() as $expansion) {
+
+            $eName = $expansion->getTableName();
+
+            // Delete expansion rows on child records.
+            $this->_db->query("DELETE $eName FROM $eName
+                INNER JOIN $rName ON $eName.parent_id = $rName.id
+                WHERE $rName.exhibit_id = $this->id
+            ");
+
+        }
+
+        // Delete child records.
+        $recordsTable->delete(
+            $rName, array('exhibit_id=?' => $this->id)
         );
 
-        // Use row-specifc values if present.
-        if (!is_null($this->h_percent) && !is_null($this->v_percent)) {
-            $proportions['horizontal'] =    $this->h_percent;
-            $proportions['vertical'] =      $this->v_percent;
-        }
-
-        return $proportions;
-
     }
 
+
     /**
-     * Get the starting timeline zoom.
-     *
-     * @return integer $zoom The zoom index.
+     * Measure the image layer when the exhibit is * saved.
      */
-    public function getTimelineZoom()
+    protected function beforeSave()
     {
-        return !is_null($this->default_timeline_zoom) ?
-            $this->default_timeline_zoom :
-            (int) get_option('timeline_zoom');
+        $this->compileImageSize();
     }
 
+
     /**
-     * Delete status and element text association records on exhibit delete.
-     *
-     * @return void.
+     * Delete all child records when the exhibit is deleted.
      */
-    public function delete()
+    protected function beforeDelete()
     {
-
-        // Get the records table, delete child data.
-        $_recordsTable = $this->getTable('NeatlineDataRecord');
-        $records = $_recordsTable->findBySql('exhibit_id = ?', array($this->id));
-        foreach ($records as $record) { $record->delete(); }
-
-        // Call parent.
-        parent::delete();
-
+        $this->deleteChildRecords();
     }
 
-    /**
-     * Validate slug format.
-     *
-     * @return void.
-     */
-    protected function _validate()
-    {
-
-        if (trim($this->slug) == '') {
-            $this->addError('slug', __('The slug cannot be empty.'));
-        }
-
-        if (!preg_match('/^[0-9a-z\-]+$/', $this->slug)) {
-            $this->addError('slug', __('The slug can only contain lowercase letters, numbers, and hyphens.'));
-        }
-
-    }
 
     /**
-     * Required by Zend_Acl_Resource_Interface.
+     * Associate the model with an ACL resource id.
      *
-     * @since 1.0
-     * @return string
+     * @return string The resource id.
      */
     public function getResourceId()
     {
-        return self::RESOURCE_ID;
+        return 'Neatline_Exhibits';
     }
 
-    /**
-     * Checks whether a Neatline was created by a given user
-     *
-     * @param User
-     * @return boolean
-     */
-    public function addedBy($user)
-    {
-        return ($user->id == $this->creator_id);
-    }
 
-    /**
-     * Set the user who added the Neatline.
-     *
-     * @param User $user
-     */
-    public function setAddedBy(User $user)
-    {
-        if (!$user->exists()) {
-            throw new RuntimeException(__("Cannot associate a Neatline with a user who doesn't exist."));
-        }
-        $this->creator_id = $user->id;
-    }
-
-    /**
-     * This makes sure that the default_focus_date isn't set to the string 
-     * 'null'.
-     *
-     * @return void
-     * @author Eric Rochester <erochest@virginia.edu>
-     **/
-    protected function _checkDefaultFocusDate()
-    {
-        if (is_string($this->default_focus_date)
-            && strcasecmp($this->default_focus_date, 'null') === 0
-        ) {
-            $this->default_focus_date = null;
-        }
-    }
 }

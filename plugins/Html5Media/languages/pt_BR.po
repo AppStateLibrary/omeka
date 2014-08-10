@@ -1,0 +1,104 @@
+# Translation for the Html5Media plugin for Omeka.
+# Copyright (C) 2013 John Flatness
+# This file is distributed under the GNU General Public License, v3.
+# 
+# Translators:
+# tamiel, 2013
+msgid ""
+msgstr ""
+"Project-Id-Version: omeka-plugin-Html5Media\n"
+"Report-Msgid-Bugs-To: http://github.com/zerocrates/Html5Media/issues\n"
+"POT-Creation-Date: 2013-05-14 13:53-0500\n"
+"PO-Revision-Date: 2014-01-06 04:20+0000\n"
+"Last-Translator: John Flatness <john@zerocrates.org>\n"
+"Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/omeka/language/pt_BR/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: pt_BR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: Html5MediaPlugin.php:175
+msgid "Download File"
+msgstr ""
+
+#: Html5MediaPlugin.php:176
+msgid "Play/Pause"
+msgstr ""
+
+#: Html5MediaPlugin.php:177
+msgid "Mute Toggle"
+msgstr ""
+
+#: Html5MediaPlugin.php:178
+msgid "Fullscreen"
+msgstr ""
+
+#: Html5MediaPlugin.php:179
+msgid "Captions/Subtitles"
+msgstr ""
+
+#: Html5MediaPlugin.php:180
+msgid "None"
+msgstr ""
+
+#: Html5MediaPlugin.php:181
+msgid "Turn off Fullscreen"
+msgstr ""
+
+#: Html5MediaPlugin.php:182
+msgid "Go Fullscreen"
+msgstr ""
+
+#: Html5MediaPlugin.php:183
+msgid "Unmute"
+msgstr ""
+
+#: Html5MediaPlugin.php:184
+msgid "Mute"
+msgstr ""
+
+#: Html5MediaPlugin.php:185
+msgid "Download Video"
+msgstr ""
+
+#: Html5MediaPlugin.php:186
+msgid "Close"
+msgstr ""
+
+#: config-form.php:3
+msgid "Video Settings"
+msgstr "Configurações de vídeo"
+
+#: config-form.php:22
+msgid "Responsive Sizing"
+msgstr "Alteração de tamanho dinâmica"
+
+#: config-form.php:26
+msgid ""
+"Check the box below to allow the video player to automatically match its "
+"size to its container."
+msgstr "Marque a caixa abaixo para permitir que o tocador de vídeo mude de tamanho dinâmicamente para caber no container."
+
+#: config-form.php:33 config-form.php:60 config-form.php:86
+msgid "MIME Types"
+msgstr "Tipos MIME"
+
+#: config-form.php:41 config-form.php:68 config-form.php:94
+msgid "Extensions"
+msgstr "Extensões"
+
+#: config-form.php:49
+msgid "Audio Settings"
+msgstr "Configurações de áudio"
+
+#: config-form.php:76
+msgid "Text Settings"
+msgstr "Configurações de texto"
+
+#: config-form.php:79
+msgid ""
+"Text files are data like subtitles and chapter names. HTML5 Media wil "
+"include them as tracks of audio or video files with the same original "
+"filename on the same item."
+msgstr "Arquivos de texto são dados como legendas e nomes de capítulos. O plugin HTML5 Media vai incluí-los como faixas de áudio ou vídeo com o mesmo nome de arquivo no mesmo ítem."

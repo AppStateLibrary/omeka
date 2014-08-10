@@ -1,3 +1,7 @@
+div#geolocation {
+	clear: both;
+}
+
 .info-panel .map {
     margin-top:-18px;
     display:block; 
@@ -8,7 +12,11 @@
 }
 
 .geolocation_balloon {
-    width: '200px';
+    width: 200px;
+}
+
+.geolocation_balloon img {
+    max-width: 100%;
 }
 
 .geolocation_balloon_title {

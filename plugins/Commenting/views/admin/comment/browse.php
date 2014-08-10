@@ -1,42 +1,45 @@
 <?php
-queue_css('commenting');
-queue_js('commenting');
-    head(array('title' => 'Comments', 'bodyclass' => 'primary'));
+queue_css_file('commenting');
+queue_js_file('commenting');
+$pageTitle = __('Comments') . ' ' . __('(%s total)', $total_results);
+echo head(array('title' => $pageTitle, 'bodyclass' => 'commenting browse'));
 
 ?>
 <div id='primary'>
 <div class="pagination"><?php echo pagination_links(); ?></div>
-    <?php echo flash(); ?>
-    <div id="browse-meta" class="group">
-        <div id="browse-meta-lists">
-            <ul class="navigation">
-                <li><strong>Quick Filter</strong></li>
-            <?php
-                echo nav(array(
-                    'All' => uri('commenting/comment/browse'),
-                    'Approved' => uri('commenting/comment/browse?approved=1'),
-                    'Needs Approval' => uri('commenting/comment/browse?approved=0')
-                ));
-            ?>
-            </ul>
-        </div>
-    </div>
-<h1>Comments</h1>
-<?php if(has_permission('Commenting_Comment', 'updateapproved') ) :?>
-<div id='comment-batch-actions'><input id='batch-select' type='checkbox' /> Select All | With Selected:
-<ul class='comment-batch-actions'>
-<li onclick="Commenting.batchApprove()">Approve</li>
-<li onclick="Commenting.batchUnapprove()">Unapprove</li>
+
+
+<?php echo flash(); ?>
+<?php if(!Omeka_Captcha::isConfigured()): ?>
+<p class="alert"><?php echo __("You have not entered your %s API keys under %s. We recommend adding these keys, or the commenting form will be vulnerable to spam.", '<a href="http://recaptcha.net/">reCAPTCHA</a>', "<a href='" . url('security#recaptcha_public_key') . "'>" . __('security settings') . "</a>");?></p>
+<?php endif; ?>
+
+    
+    
+    
+<?php if(is_allowed('Commenting_Comment', 'update-approved') ) : //updateapproved is standing in for all moderation options?>
+<div id='commenting-batch-actions'>
+<a class="small blue button disabled" id="batch-delete" ><?php echo __("Delete"); ?></a>
+<a class="small blue button disabled" id="batch-approve" ><?php echo __("Approve"); ?></a>
+<a class="small blue button disabled" id="batch-unapprove" ><?php echo __("Unapprove"); ?></a>
 <?php if(get_option('commenting_wpapi_key') != ''): ?>
-<li onclick="Commenting.batchReportSpam()">Report Spam</li>
-<li onclick="Commenting.batchReportHam()">Report Ham</li>
+<a class="small blue button disabled" id="batch-report-spam" onclick="Commenting.batchReportSpam()"><?php echo __("Report Spam"); ?></a>
+<a class="small blue button disabled" id="batch-report-ham" onclick="Commenting.batchReportHam()"><?php echo __("Report Not Spam"); ?></a>
 <?php endif; ?>
-</ul>
+<a class="small blue button disabled" id="batch-flag" ><?php echo __("Flag"); ?></a>
+<a class="small blue button disabled" id="batch-unflag" ><?php echo __("Unflag"); ?></a>
 </div>
 <?php endif; ?>
-
-<?php echo commenting_render_comments($comments, true); ?>
+<?php echo common('quick-filters'); ?>
+<div style="clear: both">
+    <input id='batch-select' type='checkbox' /> <?php echo __("Select All"); ?>
+</div>
+<?php 
+    foreach($comments as $comment) {
+        echo $this->partial('comment.php', array('comment' => $comment));
+    }    
+?>
 
 </div>
 
-<?php foot(); ?>
+<?php echo foot(); ?>

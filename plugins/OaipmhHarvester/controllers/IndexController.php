@@ -2,9 +2,11 @@
 /**
  * @package OaipmhHarvester
  * @subpackage Controllers
- * @copyright Copyright (c) 2009 Center for History and New Media
+ * @copyright Copyright (c) 2009-2011 Roy Rosenzweig Center for History and New Media
  * @license http://www.gnu.org/licenses/gpl-3.0.txt
  */
+
+require_once dirname(__FILE__) . '/../forms/Harvest.php';
 
 /**
  * Index controller
@@ -12,8 +14,13 @@
  * @package OaipmhHarvester
  * @subpackage Controllers
  */
-class OaipmhHarvester_IndexController extends Omeka_Controller_Action
+class OaipmhHarvester_IndexController extends Omeka_Controller_AbstractActionController
 {
+    public function init() 
+    {
+        $this->_helper->db->setDefaultModelName('OaipmhHarvester_Harvest');
+    }
+    
     /**
      * Prepare the index view.
      * 
@@ -21,8 +28,10 @@ class OaipmhHarvester_IndexController extends Omeka_Controller_Action
      */
     public function indexAction()
     {
-        $harvests = $this->getTable('OaipmhHarvesterHarvest')->findAllHarvests();
+        $harvests = $this->_helper->db->getTable('OaipmhHarvester_Harvest')->findAll();
         $this->view->harvests = $harvests;
+        $this->view->harvestForm = new OaipmhHarvester_Form_Harvest();
+        $this->view->harvestForm->setAction($this->_helper->url('sets'));
     }
     
     /**
@@ -36,94 +45,55 @@ class OaipmhHarvester_IndexController extends Omeka_Controller_Action
         // OAI-PMH metadata formats.
         $maps = $this->_getMaps();
         
-        // Get the available metadata formats from the data provider.
-        $baseUrl = trim($_POST['base_url']);
-        $requestArguments = array('verb' => 'ListMetadataFormats');
+        $waitTime = oaipmh_harvester_config('requestThrottleSecs', 5);
+        if ($waitTime) {
+            $request = new OaipmhHarvester_Request_Throttler(
+                new OaipmhHarvester_Request($this->_getParam('base_url')),
+                array('wait' => $waitTime)
+            );
+        } else {
+            $request = new OaipmhHarvester_Request(
+                $this->_getParam('base_url')
+            );
+        }
         
         // Catch errors such as "String could not be parsed as XML"
+        $extraMsg = 'Please check to be certain the URL is correctly formatted '
+                  . 'for OAI-PMH harvesting.';
         try {
-            $oaipmh = new OaipmhHarvester_Xml($baseUrl, $requestArguments);
-        } catch (Exception $e) {
-            $this->flash($e->getMessage());
-            $this->redirect->goto('index');
+            $metadataFormats = $request->listMetadataFormats();
+        } catch (Zend_Uri_Exception $e) {
+            $errorMsg = "Invalid URL given. $extraMsg";
+        } catch (Zend_Http_Client_Exception $e) {
+            $errorMsg = $e->getMessage() . " $extraMsg";
+        } catch (OaipmhHarvester_Request_ThrottlerException $e) {
+            $errorMsg = $e->getMessage();
         }
-        
+        if (isset($errorMsg)) {
+            $this->_helper->flashMessenger($errorMsg, 'error');
+            return $this->_helper->redirector->goto('index');
+        }
+
         /* Compare the available OAI-PMH metadataFormats with the available 
-        Omeka maps and extract only those that are common to both. It's 
-        important to consider that some repositories don't provide repository
-        -wide metadata formats. Instead they only provide record level 
-        metadata formats. Oai_dc is mandatory for all records, so if a
-        repository doesn't provide metadata formats using 
-        ListMetadataFormats, only expose the oai_dc prefix. For a data 
-        provider that doesn't offer repository-wide metadata formats, see: 
-        http://www.informatik.uni-stuttgart.de/cgi-bin/OAI/OAI.pl
-        
+        Omeka maps and extract only those that are common to both.         
         The comparison is made between the metadata schemata, not the prefixes.
         */
-        $availableMaps = array();
-        if (isset($oaipmh->getOaipmh()->ListMetadataFormats)) {
-            $metadataFormats = $oaipmh->getOaipmh()->ListMetadataFormats->metadataFormat;
-            foreach ($metadataFormats as $metadataFormat) {
-                $metadataPrefix = (string) $metadataFormat->metadataPrefix;
-                $schema = (string) $metadataFormat->schema;
-                foreach($maps as $mapClass => $mapSchema) {
-                    if($mapSchema == $schema) {
-                        // Encode the class and prefix together with a pipe.
-                        $availableMaps["$mapClass|$metadataPrefix"] = $metadataPrefix;
-                        break;
-                    }
-                }
-            }
-        }
-        else {
-            if (in_array('http://www.openarchives.org/OAI/2.0/oai_dc.xsd', $maps)) {
-                $availableMaps["OaipmhHarvester_Harvest_OaiDc|oai_dc"] = 'oai_dc';
-            }
-        }
+        $availableMaps = array_intersect($maps, $metadataFormats);
         
-        // Get the sets from the data provider.
-        $requestArguments = array('verb' => 'ListSets');
-        
-        // If a resumption token exists, process it. For a data provider that 
-        // uses a resumption token for sets, see: http://www.ajol.info/oai/
-        if (isset($_POST['resumption_token'])) {
-            $requestArguments['resumptionToken'] = $_POST['resumption_token'];
-        }
-        
-        $oaipmh = new OaipmhHarvester_Xml($baseUrl, $requestArguments);
-        
-        // Handle returned errors, such as "noSetHierarchy". For a data provider 
-        // that has no set hierarchy, see: http://solarphysics.livingreviews.org/register/oai
-        if ($oaipmh->isError()) {
-            $error     = (string) $oaipmh->getError();
-            $errorCode = (string) $oaipmh->getErrorCode();
-            
-            // If the error code is "noSetHierarchy" set the sets to false to 
-            // indicate that the repository does not have a set hierarchy.
-            if ($errorCode == OaipmhHarvester_Xml::ERROR_CODE_NO_SET_HIERARCHY) {
-                $sets = false;
-            } else {
-                $this->flash("$errorCode: $error");
-                $this->redirect->goto('index');
-            }
-            
-        // If no error was returned, it is a valid ListSets response.
-        } else {
-            $sets = $oaipmh->getOaipmh()->ListSets->set;
-        }
-        
-        // Set the resumption token, if any.
-        if (isset($oaipmh->getOaipmh()->ListSets->resumptionToken)) {
-            $resumptionToken = $oaipmh->getOaipmh()->ListSets->resumptionToken;
-        } else {
-            $resumptionToken = false;
-        }
+        // For a data provider that uses a resumption token for sets, see: 
+        // http://www.ajol.info/oai/
+        $response = $request->listSets($this->_getParam('resumption_token'));
         
         // Set the variables to the view object.
-        $this->view->availableMaps   = $availableMaps;
-        $this->view->sets            = $sets;
-        $this->view->resumptionToken = $resumptionToken;
-        $this->view->baseUrl         = $baseUrl;
+        $this->view->availableMaps   = array_combine(
+            array_keys($availableMaps),
+            array_keys($availableMaps)
+        );
+        $this->view->sets            = $response['sets'];
+        $this->view->resumptionToken = 
+            array_key_exists('resumptionToken', $response)
+            ? $response['resumptionToken'] : false;
+        $this->view->baseUrl         = $this->_getParam('base_url'); // Watch out for injection!
         $this->view->maps            = $maps;
     }
     
@@ -135,82 +105,74 @@ class OaipmhHarvester_IndexController extends Omeka_Controller_Action
     public function harvestAction()
     {
         // Only set on re-harvest
-        $harvest_id     = $_POST['harvest_id'];
-        
-        $baseUrl        = $_POST['base_url'];
-        // metadataSpec is of the form "class|prefix", explode on pipe to get
-        // the individual items, 0 => class, 1 => prefix
-        $metadataSpec   = explode('|', $_POST['metadata_spec']);
-        $setSpec        = isset($_POST['set_spec']) ? $_POST['set_spec'] : null;
-        $setName        = isset($_POST['set_name']) ? $_POST['set_name'] : null;
-        $setDescription = isset($_POST['set_description']) ? $_POST['set_description'] : null;
-        
-        $metadataClass = $metadataSpec[0];
-        $metadataPrefix = $metadataSpec[1];
+        $harvest_id = $this->_getParam('harvest_id');
         
         // If true, this is a re-harvest, all parameters will be the same
-        if($harvest_id) {
-            $harvest = $this->getTable('OaipmhHarvesterHarvest')->find($harvest_id);
+        if ($harvest_id) {
+            $harvest = $this->_helper->db->getTable('OaipmhHarvester_Harvest')->find($harvest_id);
             
             // Set vars for flash message
             $setSpec = $harvest->set_spec;
             $baseUrl = $harvest->base_url;
             $metadataPrefix = $harvest->metadata_prefix;
-            
+          
             // Only on successfully-completed harvests: use date-selective
             // harvesting to limit results.
-            if($harvest->status == OaipmhHarvesterHarvest::STATUS_COMPLETED)
+            if ($harvest->status == OaipmhHarvester_Harvest::STATUS_COMPLETED) {
                 $harvest->start_from = $harvest->initiated;
-            else 
+            } else {
                 $harvest->start_from = null;
-        }
-        else {
-            // If $harvest is not null, use the existing harvest record.
-            $harvest = $this->getTable('OaipmhHarvesterHarvest')->findUniqueHarvest($baseUrl, $setSpec, $metadataPrefix);
+            } 
+        } else {
+            $baseUrl        = $this->_getParam('base_url');
+            $metadataSpec   = $this->_getParam('metadata_spec');
+            $setSpec        = $this->_getParam('set_spec');
+            $setName        = $this->_getParam('set_name');
+            $setDescription = $this->_getParam('set_description');
         
-            if(!$harvest) {
+            $metadataPrefix = $metadataSpec;
+            $harvest = $this->_helper->db->getTable('OaipmhHarvester_Harvest')->findUniqueHarvest($baseUrl, $setSpec, $metadataPrefix);
+         
+            if (!$harvest) {
                 // There is no existing identical harvest, create a new entry.
-                $harvest = new OaipmhHarvesterHarvest;
+                $harvest = new OaipmhHarvester_Harvest;
                 $harvest->base_url        = $baseUrl;
                 $harvest->set_spec        = $setSpec;
                 $harvest->set_name        = $setName;
                 $harvest->set_description = $setDescription;
                 $harvest->metadata_prefix = $metadataPrefix;
-                $harvest->metadata_class  = $metadataClass;
             }
         }
             
         // Insert the harvest.
-        $harvest->status          = OaipmhHarvesterHarvest::STATUS_STARTING;
+        $harvest->status          = OaipmhHarvester_Harvest::STATUS_QUEUED;
         $harvest->initiated       = date('Y:m:d H:i:s');
         $harvest->save();
         
-        // Set the command arguments.
-        $phpCommandPath    = get_option('oaipmh_harvester_php_path');
-        $bootstrapFilePath = $this->_getBootstrapFilePath();
-        $harvestId         = escapeshellarg($harvest->id);
-        
-        // Set the command and run the script in the background.
-        $command = "$phpCommandPath $bootstrapFilePath -h $harvestId";
-        $pid = $this->_fork($command);
-        
-        // Set the PID after the background process is started.
-        // Save twice to assure the process has access to the data it needs.
-        $harvest->pid = $pid;
-        $harvest->save();
-        
+        $jobDispatcher = Zend_Registry::get('bootstrap')->getResource('jobs');        
+        $jobDispatcher->setQueueName('imports');
+
+        try {
+            $jobDispatcher->sendLongRunning('OaipmhHarvester_Job', array('harvestId' => $harvest->id));
+        } catch (Exception $e) {
+            $harvest->status = OaipmhHarvester_Harvest::STATUS_ERROR;
+            $harvest->addStatusMessage(
+                get_class($e) . ': ' . $e->getMessage(),
+                OaipmhHarvester_Harvest_Abstract::MESSAGE_CODE_ERROR
+            );
+            throw $e;
+        }
+
         if ($setSpec) {
             $message = "Set \"$setSpec\" is being harvested using \"$metadataPrefix\". This may take a while. Please check below for status.";
         } else {
             $message = "Repository \"$baseUrl\" is being harvested using \"$metadataPrefix\". This may take a while. Please check below for status.";
         }
-        if($harvest->start_from)
+        if ($harvest->start_from) {
             $message = $message." Harvesting is continued from $harvest->start_from .";
-        
-        $this->flashSuccess($message);
-        
-        $this->redirect->goto('index');
-        exit;
+        }
+        $this->_helper->flashMessenger($message, 'success');
+        return $this->_helper->redirector->goto('index');
     }
     
     /**
@@ -220,10 +182,8 @@ class OaipmhHarvester_IndexController extends Omeka_Controller_Action
      */
     public function statusAction()
     {
-        $harvestId = $_GET['harvest_id'];
-        
-        $harvest = $this->getTable('OaipmhHarvesterHarvest')->find($harvestId);
-        
+        $harvestId = $this->_getParam('harvest_id');
+        $harvest = $this->_helper->db->getTable('OaipmhHarvester_Harvest')->find($harvestId);
         $this->view->harvest = $harvest;
     }
     
@@ -234,70 +194,19 @@ class OaipmhHarvester_IndexController extends Omeka_Controller_Action
      */
     public function deleteAction()
     {
-        $harvestId = $_GET['harvest_id'];
-        
-        $harvest = $this->getTable('OaipmhHarvesterHarvest')->find($harvestId);
-        
-        $records = $this->getTable('OaipmhHarvesterRecord')->findByHarvestId($harvest->id);
-        
-        // Delete items if they exist.
-        foreach ($records as $record) {
-            if ($record->item_id) {
-                $item = $this->getTable('Item')->find($record->item_id);
-                $item->delete();
-                $record->delete();
-            }
-        }
-        
-        // Delete collection if exists.
-        if ($harvest->collection_id) {
-            $collection = $this->getTable('Collection')->find($harvest->collection_id);
-            $collection->delete();
-            $harvest->collection_id = null;
-        }
-        
-        $harvest->status = OaipmhHarvesterHarvest::STATUS_DELETED;
-        $statusMessage = 'All items created for this harvest were deleted on ' 
-                       . date('Y-m-d H:i:s');
-        $harvest->status_messages = strlen($harvest->status_messages) == 0 
-                                  ? $statusMessage 
-                                  : "\n\n" . $statusMessage;
-        $harvest->save();
-        
-        $this->flash('All items created for the harvest were deleted.');
-        
-        $this->redirect->goto('index');
-        exit;
-    }
-    
-    /**
-     * Kill the background process for a harvest if it is still running.
-     */
-    public function killAction()
-    {
-        $harvestId = $_POST['harvest_id'];
-        $harvest = $this->getTable('OaipmhHarvesterHarvest')->find($harvestId);
-        
-        $pid = $harvest->pid;
-        
-        if($pid) {
-            if($harvest->status == OaipmhHarvesterHarvest::STATUS_STARTING ||
-               $harvest->status == OaipmhHarvesterHarvest::STATUS_IN_PROGRESS)
-                {
-                    exec("kill -9 $pid");
-                    $harvest->pid = null;
-                    $harvest->status = OaipmhHarvesterHarvest::STATUS_KILLED;
-                    $statusMessage = 'This harvest was killed by an administrator on ' 
-                                  . date('Y-m-d H:i:s');
-                    $harvest->status_messages = strlen($harvest->status_messages) == 0 
-                                             ? $statusMessage 
-                                             : "\n\n" . $statusMessage;
-                    $harvest->save(); 
-                    $this->flash("Harvest process $pid was killed.");
-               }
-        }
-        $this->redirect->goto('index');
-        exit;
+        // Throw if harvest does not exist or access is disallowed.
+        $harvestId = $this->_getParam('id');
+        $harvest = $this->_helper->db->getTable('OaipmhHarvester_Harvest')->find($harvestId);
+        $jobDispatcher = Zend_Registry::get('bootstrap')->getResource('jobs');        
+        $jobDispatcher->setQueueName('imports');
+        $jobDispatcher->sendLongRunning('OaipmhHarvester_DeleteJob',
+            array(
+                'harvestId' => $harvest->id,
+            )
+        );
+        $msg = 'Harvest has been marked for deletion.';
+        $this->_helper->flashMessenger($msg, 'success');
+        return $this->_helper->redirector->goto('index');
     }
     
     /**
@@ -314,39 +223,18 @@ class OaipmhHarvester_IndexController extends Omeka_Controller_Action
             if ($dirEntry->isFile() && !$dirEntry->isDot()) {
                 $filename = $dirEntry->getFilename();
                 $pathname = $dirEntry->getPathname();
-                if(preg_match('/^(.+)\.php$/', $filename, $match) && $match[1] != 'Abstract') {
+                if (preg_match('/^(.+)\.php$/', $filename, $match) 
+                    && $match[1] != 'Abstract'
+                ) {
                     // Get and set only the name of the file minus the extension.
                     require_once($pathname);
                     $class = "OaipmhHarvester_Harvest_${match[1]}";
-                    $object = new $class(null, null);
-                    $metadataSchema = $object->getMetadataSchema();
-                    $metadataPrefix = $object->getMetadataPrefix();
-                    $maps[$class] = $metadataSchema;
+                    $metadataSchema = constant("$class::METADATA_SCHEMA");
+                    $metadataPrefix = constant("$class::METADATA_PREFIX");
+                    $maps[$metadataPrefix] = $metadataSchema;
                 }
             }
         }
         return $maps;
-    }
-    
-    /**
-     * Get the path to the bootstrap file.
-     * 
-     * @return string
-     */
-    private function _getBootstrapFilePath()
-    {
-        return OAIPMH_HARVESTER_PLUGIN_DIRECTORY
-             . DIRECTORY_SEPARATOR 
-             . 'bootstrap.php';
-    }
-    
-    /**
-     * Launch a background process, returning control to the foreground.
-     * 
-     * @link http://www.php.net/manual/en/ref.exec.php#70135
-     * @return int The background process' PID
-     */
-    private function _fork($command) {
-        return exec("$command > /dev/null 2>&1 & echo $!");
     }
 }

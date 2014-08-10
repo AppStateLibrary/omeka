@@ -1,7 +1,7 @@
 <?php
 /**
  * @version $Id$
- * @copyright Center for History and New Media, 2007-2010
+ * @copyright Center for History and New Media, 2007-2011
  * @license http://www.gnu.org/licenses/gpl-3.0.txt
  * @package SimpleContactForm
  */
@@ -10,7 +10,7 @@
  * Tests for SimpleContactForm.
  *
  * @package SimpleContactForm
- * @copyright Center for History and New Media, 2007-2010
+ * @copyright Center for History and New Media, 2007-2011
  */
 class SimpleContactForm_Test extends Omeka_Test_AppTestCase {
     
@@ -19,7 +19,7 @@ class SimpleContactForm_Test extends Omeka_Test_AppTestCase {
     protected $mailAdmin;
     protected $mailName;
     protected $mailMessage;
-    protected $_useAdminViews = false;
+    protected $_isAdminTest = false;
     
     public function setUp()
     {
@@ -53,7 +53,7 @@ class SimpleContactForm_Test extends Omeka_Test_AppTestCase {
     }
     
     public function testSendMailToContacter() {
-        $mailText = $this->mailHelper->getMailText();
+        $mailText = $this->mailHelper->getMailText(1);
         $this->assertThat($mailText, $this->stringContains("From: ".get_option('administrator_email')));
         $this->assertThat($mailText, $this->stringContains("To: ".$this->mailName." <".$this->mailTo.">"));
         $this->assertThat($mailText, $this->stringContains("Subject: ".get_option('site_title')." - ".get_option('simple_contact_form_user_notification_email_subject')));
@@ -61,7 +61,7 @@ class SimpleContactForm_Test extends Omeka_Test_AppTestCase {
     }
     
     public function testSendMailToAdministrator() {
-        $mailText = $this->mailHelper->getMailText(1);          
+        $mailText = $this->mailHelper->getMailText();          
         $this->assertThat($mailText, $this->stringContains("From: ".$this->mailName." <".$this->mailTo.">"));
         $this->assertThat($mailText, $this->stringContains("To: ".get_option('administrator_email')));
         $this->assertThat($mailText, $this->stringContains("Subject: ".get_option('site_title')." - ".get_option('simple_contact_form_admin_notification_email_subject')));

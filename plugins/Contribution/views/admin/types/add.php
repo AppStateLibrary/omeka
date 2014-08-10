@@ -6,40 +6,41 @@
  * @package Contribution
  */
 
-$contributionType = $contributiontype;
-contribution_admin_header(array('Types', 'Add a New Type'));
+$contributionType = $contribution_type;
+$contributionTypeElements = $contribution_type->ContributionTypeElements;
+$itemType = $contribution_type->ItemType;
+if($itemType) {
+    $elements = $itemType->Elements;    
+} else {
+    $elements = array();
+}
+
+$addNewRequestUrl = admin_url('contribution/types/add-existing-element');
+$addExistingRequestUrl = admin_url('contribution/types/add-existing-element');
+$changeExistingElementUrl = admin_url('contribution/types/change-existing-element');
+
+queue_js_file('contribution-types');
+$js = "
+jQuery(document).ready(function () {
+var addNewRequestUrl = '" . admin_url('contribution/types/add-existing-element') . "'
+var addExistingRequestUrl = '" . admin_url('contribution/types/add-existing-element') . "'
+var changeExistingElementUrl = '" . admin_url('contribution/types/change-existing-element') . "'
+Omeka.ContributionTypes.manageContributionTypes(addNewRequestUrl, addExistingRequestUrl, changeExistingElementUrl);
+Omeka.ContributionTypes.enableSorting();
+});
+";
+queue_js_string($js);
+
+queue_css_file('contribution-type-form');
+contribution_admin_header(array(__('Types'), __('Add a new type')));
 ?>
+
+<?php 
+echo $this->partial('contribution-navigation.php');
+?>
+
 <div id="primary">
     <?php echo flash(); ?>
-<form method="post" action="">
-    <fieldset>
-        <legend>Type Metadata</legend>
-        <div class="field">
-            <?php echo $this->formLabel('item_type_id', 'Item Type'); ?>
-            <div class="inputs">
-                <?php echo contribution_select_item_type('item_type_id', $contributionType->item_type_id); ?>
-                <p class="explanation">The Item Type, from your site's list of types, you would like to use.</p>
-            </div>
-        </div>
-        <div class="field">
-            <?php echo $this->formLabel('display_name', 'Display Name'); ?>
-            <div class="inputs">
-                <?php echo $this->formText('display_name', $contributionType->display_name, array('class' => 'textinput')); ?>
-                <p class="explanation">The label you would like to use for this contribution type. If blank, the Item Type name will be used.</p>
-            </div>
-        </div>
-        <div class="field">
-            <?php echo $this->formLabel('file_permissions', 'Allow File Upload Via Form'); ?>
-            <div class="inputs">
-                <?php echo $this->formSelect('file_permissions', $contributionType->file_permissions, null, ContributionType::getPossibleFilePermissions()); ?>
-                <p class="explanation">Enable or disable file uploads through the public contribution form. If set to &#8220;Required,&#8220; users must add a file to their contribution when selecting this item type.</p>
-            </div>
-        </div>
-    </fieldset>
-
-    <fieldset>
-        <input type="submit" class="form-submit" value="Save Changes" />
-    </fieldset>
-</form>
+    <?php include 'form.php'; ?>
 </div>
-<?php foot();
+<?php echo foot(); ?>

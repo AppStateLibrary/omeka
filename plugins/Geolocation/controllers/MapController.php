@@ -1,31 +1,38 @@
 <?php
-require_once 'Omeka/Controller/Action.php';
 
-class Geolocation_MapController extends Omeka_Controller_Action
+class Geolocation_MapController extends Omeka_Controller_AbstractActionController
 {
+    public function init()
+    {
+        $this->_helper->db->setDefaultModelName('Item');
+    }
+    
     public function browseAction()
     {
-        // Need to use a plugin hook here to make sure that this search retrieves
-        // only items that are on the map.
-        $this->_setParam('only_map_items', true);
-        $this->_setParam('use_map_per_page', true);
-        $results = $this->_helper->searchItems();
+        $table = $this->_helper->db->getTable();
+        $locationTable = $this->_helper->db->getTable('Location');
         
-        $items      = $results['items'];
-        $totalItems = $results['total_results'];
-        $locations  = geolocation_get_location_for_item($items);
+        $params = $this->getAllParams();
+        $params['only_map_items'] = true;
+        $limit = (int) get_option('geolocation_per_page');
+        $currentPage = $this->getParam('page', 1);
 
-        // Make the pagination values accessible from the plugin template 
-        // helpers.
-        $params = array('page'          => $results['page'], 
-                        'per_page'      => geolocation_get_map_items_per_page(), 
-                        'total_results' => $results['total_results']);
-
-        Zend_Registry::set('map_params', $params);
+        // Only get pagination data for the "normal" page, only get
+        // item/location data for the KML output.
+        if ($this->_helper->contextSwitch->getCurrentContext() == 'kml') {
+            $items = $table->findBy($params, $limit, $currentPage);
+            $this->view->items = $items;
+            $this->view->locations = $locationTable->findLocationByItem($items);
+        } else {
+            $this->view->totalItems = $table->count($params);
+            $this->view->params = $params;
         
-        // Make the pagination values accessible from pagination_links().
-        Zend_Registry::set('pagination', $params);
-        
-        $this->view->assign(compact('items', 'totalItems', 'locations'));
+            $pagination = array(
+                'page'          => $currentPage,
+                'per_page'      => $limit,
+                'total_results' => $this->view->totalItems
+            );
+            Zend_Registry::set('pagination', $pagination);
+        }
     }
 }

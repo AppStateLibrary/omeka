@@ -1,53 +1,60 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4; */
 
 /**
- * Ignition file.
- *
- * PHP version 5
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by
- * applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
- * OF ANY KIND, either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
- *
  * @package     omeka
  * @subpackage  neatline
- * @author      Scholars' Lab <>
- * @author      Bethany Nowviskie <bethany@virginia.edu>
- * @author      Adam Soroka <ajs6f@virginia.edu>
- * @author      David McClure <david.mcclure@virginia.edu>
- * @copyright   2011 Rector and Board of Visitors, University of Virginia
- * @license     http://www.apache.org/licenses/LICENSE-2.0.html Apache 2 License
+ * @copyright   2014 Rector and Board of Visitors, University of Virginia
+ * @license     http://www.apache.org/licenses/LICENSE-2.0.html
  */
 
 
-// constants {{{
+if (!defined('NL_DIR')) define('NL_DIR', dirname(__FILE__));
 
-if (!defined('NEATLINE_PLUGIN_VERSION')) {
-    define('NEATLINE_PLUGIN_VERSION', get_plugin_ini('Neatline', 'version'));
-}
+// Plugin:
+require_once NL_DIR.'/NeatlinePlugin.php';
 
-if (!defined('NEATLINE_PLUGIN_DIR')) {
-    define('NEATLINE_PLUGIN_DIR', dirname(__FILE__));
-}
+// Models:
+require_once NL_DIR.'/models/abstract/Neatline_Row_Abstract.php';
+require_once NL_DIR.'/models/abstract/Neatline_Row_Expandable.php';
+require_once NL_DIR.'/models/abstract/Neatline_Row_Expansion.php';
+require_once NL_DIR.'/models/abstract/Neatline_Table_Expandable.php';
+require_once NL_DIR.'/models/abstract/Neatline_Table_Expansion.php';
 
-// }}}
+// Migrations:
+require_once NL_DIR.'/migrations/abstract/Neatline_Migration_Abstract.php';
+require_once NL_DIR.'/migrations/2.0.2/Neatline_Migration_202.php';
+require_once NL_DIR.'/migrations/2.1.2/Neatline_Migration_212.php';
+require_once NL_DIR.'/migrations/2.2.0/Neatline_Migration_220.php';
 
+// Helper classes:
+require_once NL_DIR.'/jobs/Neatline_Job_ImportItems.php';
+require_once NL_DIR.'/controllers/abstract/Neatline_Controller_Rest.php';
+require_once NL_DIR.'/assertions/Neatline_Acl_Assert_RecordOwnership.php';
+require_once NL_DIR.'/forms/Neatline_Form_Exhibit.php';
 
-// requires {{{
+// Helper functions:
+require_once NL_DIR.'/helpers/Acl.php';
+require_once NL_DIR.'/helpers/Assets.php';
+require_once NL_DIR.'/helpers/Coverage.php';
+require_once NL_DIR.'/helpers/Globals.php';
+require_once NL_DIR.'/helpers/Layers.php';
+require_once NL_DIR.'/helpers/Mysql.php';
+require_once NL_DIR.'/helpers/Plugins.php';
+require_once NL_DIR.'/helpers/Schemas.php';
+require_once NL_DIR.'/helpers/Strings.php';
+require_once NL_DIR.'/helpers/Styles.php';
+require_once NL_DIR.'/helpers/Validators.php';
+require_once NL_DIR.'/helpers/Views.php';
 
-require_once NEATLINE_PLUGIN_DIR . '/NeatlinePlugin.php';
-require_once NEATLINE_PLUGIN_DIR . '/helpers/NeatlineFunctions.php';
-require_once NEATLINE_PLUGIN_DIR . '/helpers/NeatlineRenderer.php';
-require_once NEATLINE_PLUGIN_DIR . '/forms/NeatlineDetails.php';
-require_once HELPERS;
+// Vendor:
+require_once(NL_DIR.'/lib/geoPHP/geoPHP.inc');
 
+// Set the PUT source.
+Zend_Registry::set('fileIn', 'php://input');
 
-// }}}
+// Register layer definitions.
+nl_setLayerSources();
 
-// Instantiate the manager class.
-new NeatlinePlugin;
+// Run the plugin.
+$neatline = new NeatlinePlugin();
+$neatline->setUp();
