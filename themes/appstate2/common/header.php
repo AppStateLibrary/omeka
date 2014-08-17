@@ -1,70 +1,74 @@
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-<title><?php echo settings('site_title'); echo $title ? ' | ' . strip_formatting($title) : ''; ?></title>
+<?php
+    if (isset($title)) {
+        $titleParts[] = strip_formatting($title);
+    }
+    $titleParts[] = option('site_title');
+?>
+<title><?php echo implode(' &middot; ', $titleParts); ?></title>
 <link rel="shortcut icon" href="/themes/appstate2/images/favicon.ico" type="image/x-icon" />
 
 <!-- Meta -->
 <meta charset="utf-8" />
-<meta name="description" content="<?php echo settings('description'); ?>" />
+<?php if ( $description = option('description')): ?>
+    <meta name="description" content="<?php echo $description; ?>" />
+<?php endif; ?>
 
-<?php echo auto_discovery_link_tag(); ?>
+<?php echo auto_discovery_link_tags(); ?>
 
 <!-- Plugin Stuff -->
-<?php plugin_header(); ?>
+<?php fire_plugin_hook('public_head', array('view'=>$this)); ?>
 
 <!-- Stylesheets -->
 <?php
-queue_css(array('style'), 'screen');
-display_css();
+queue_css_file(array('style'));
+echo head_css();
 ?>
 
 <!-- JavaScripts -->
-<?php echo js('jquery'); ?>
+<?php queue_js_file('vendor/jquery'); ?>
 <script type="text/javascript">
 jQuery.noConflict();
     jQuery(document).ready(function () {
 	jQuery("#submit_search").val("Search Digital Collections");
 });
 </script>
-
+<?php echo head_js(); ?>
 </head>
 
 <?php echo body_tag(array('id' => @$bodyid, 'class' => @$bodyclass)); ?>
 
-<?php plugin_body(); ?>
+<?php fire_plugin_hook('public_body', array('view'=>$this)); ?>
 
 <div id="wrap">
-
 	<div id="header">
-		<?php plugin_page_header(); ?>	
+		<?php fire_plugin_hook('public_header', array('view'=>$this)); ?>
 		<div id="search-wrap">
-			<?php echo simple_search(); ?>
-			<?php echo link_to_advanced_search('advanced search'); ?>
-			<br /><a href="http://omeka.library.appstate.edu/contact">Report a problem</a>
+			<?php echo search_form(); ?><br/>
+			<a href="http://omeka.library.appstate.edu/contact">Report a problem</a>
 		</div><!-- end search -->
-	    
-		<div id="site-title"><h1 id="head1"><a href="http://omeka.library.appstate.edu/">Digital Collections</a></h1>
-					<h2 id="head2"><a href="http://www.library.appstate.edu">Appalachian State University</a></h2></div>
-		
+
+		<div id="site-title">
+			<h1 id="head1"><a href="http://omeka.library.appstate.edu/">Digital Collections</a></h1>
+			<h2 id="head2"><a href="http://www.library.appstate.edu">Appalachian State University</a></h2>
+		</div>
 	</div><!-- end header -->
-	
+
 	<div id="primary-nav"><div id="primary-nav2">
 		<ul class="navigation">
-		<?php 
-			//echo public_nav_main(array('Home' => uri(''), 'Browse Items' => uri('items'), 'Browse Collections'=>uri('collections'), 'Exhibits'=>uri('exhibits')));
-			echo nav(
-				array(
-					'Home' => uri(''),
-					
-					'Collections' => uri('collections?sort_field=name'),
-					'About' => uri('about'),
-					'Exhibits'=> uri('exhibits')
-					)
-				); 
+		<?php
+			$navArray = array();
+			$navArray[] = array('label'=>'Home', 'uri'=>url(''));
+			$navArray[] = array('label'=>'Collections', 'uri'=>url('collections?sort_field=Dublin+Core%2CTitle'));
+			$navArray[] = array('label'=>'About', 'uri'=>url('about'));
+			$navArray[] = array('label'=>'Exhibits', 'uri'=>url('exhibits'));
+
+			echo nav($navArray);
 		?>
 		</ul>
 	</div></div><!-- end primary-nav -->
 
-<div id="content">
-<?php plugin_page_content(); ?>
+	<div id="content">
+		<?php fire_plugin_hook('public_content_top', array('view'=>$this)); ?>

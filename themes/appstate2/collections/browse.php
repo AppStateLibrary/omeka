@@ -1,58 +1,58 @@
-<?php head(array('title'=>'Browse Collections','bodyid'=>'collections','bodyclass' => 'browse')); ?>
-<div id="primary">
-    <h1>Collections</h1><br />
-    <?php if (has_collections_for_loop()): ?>
-        <div class="pagination"><?php echo pagination_links(); ?></div>
-    <?php while (loop_collections()): ?>
-   
+<?php
+    $pageTitle = __('Browse Collections');
+    echo head(array('title'=>$pageTitle, 'bodyid' => 'collections', 'bodyclass' => 'browse'));
+?>
 
-<br />
-	<!--addition to show item from collection-->
-	<div class="collection-items">
-		<?php
-			$items = get_items(array('collection'=>get_current_collection()->id), 1);
-			//$items = find_random_item(array('withImage' => true, 'collection' => collection('id'));
-			set_items_for_loop($items);
-			while(loop_items()):
-				if (item_has_thumbnail()): 
-			   	   echo link_to_collection_for_item(item_square_thumbnail(),  array('class' => 'collection-img')); 
-				endif; 
-			endwhile; 
-		?>	
-	</div>	
-	
-       <div class="collection">
-            <h2 class="coll_header"><?php echo link_to_collection(); ?></h2>
-            <div class="element">
-                <!--<h5>Description</h5>-->
-            <div class="element-text coll_descript"><?php echo nls2p(collection('Description', array('snippet'=>150))); ?></div>
+<div id="primary">
+    <h1><?php echo $pageTitle; ?> <?php echo __('(%s total)', $total_results); ?></h1>
+
+    <?php foreach (loop('collections') as $collection): ?>
+
+    <div class="collection collection-items">
+        <?php if ($collectionImage = record_image('collection', 'square_thumbnail')): ?>
+            <?php echo link_to_collection($collectionImage, array('class' => 'image collection-img')); ?>
+        <?php endif; ?>
+
+        <h1><?php echo link_to_collection(); ?></h1>
+
+        <div class="collection-meta">
+            <?php if (metadata('collection', array('Dublin Core', 'Description'))): ?>
+            <div class="collection-description">
+                <?php echo text_to_paragraphs(metadata('collection', array('Dublin Core', 'Description'), array('snippet'=>150))); ?>
+            </div>
+            <?php endif; ?>
+
+            <p class="view-items-link">
+                <?php echo link_to_items_browse(__('View the items in %s', metadata('collection', array('Dublin Core', 'Title'))),
+                array('collection' => metadata('collection', 'id'))); ?>
+            </p>
+
+            <?php fire_plugin_hook('public_collections_browse_each', array('view' => $this, 'collection' => $collection)); ?>
         </div>
 
+    </div><!-- end class="collection" -->
+    <?php endforeach; ?>
 
-	<?php if(collection_has_collectors()): ?>
-       <!-- <div class="element">
-            <h3>Collector(s)</h3>
-            
-            <div class="element-text">
-                <p><?php echo collection('Collectors', array('delimiter'=>', ')); ?></p>
-            </div>
-           
-        </div> --><?php endif; ?>
-        <p class="view-items-link"><?php echo link_to_browse_items('View the items in ' . collection('Name'), array('collection' => collection('id'))); ?></p>
+    <div id="pagination">
+        <?php echo pagination_links(); ?>
+    </div>
 
-        <?php echo plugin_append_to_collections_browse_each(); ?>
-
-        </div><!-- end class="collection" -->
-    <?php endwhile; ?>
-    <?php else: ?>
-        <p>No collections to display.</p>
-    <?php endif; ?>
-        <?php echo plugin_append_to_collections_browse(); ?>
-</div><!-- end primary -->
-<div id="secondary">
-    <div id="featured-collection" class="featured">
-	<?php echo display_random_featured_collection_with_item(); ?>
-        <?php /*echo display_random_featured_collection();*/ ?>
-    </div><!-- end featured collection -->
+    <?php fire_plugin_hook('public_collections_browse', array('collections'=>$collections, 'view' => $this)); ?>
 </div>
-<?php foot();
+
+<div id="secondary">
+  <!-- Featured Collection -->
+  <?php if (get_theme_option('Display Featured Collection')): ?>
+  <div id="featured-collection" class="featured">
+      <h2><?php echo __('Featured Collection'); ?></h2>
+      <?php echo random_featured_collection(); ?>
+  </div><!-- end featured collection -->
+  <?php endif; ?>
+
+  <!-- Featured Exhibit -->
+  <?php if ((get_theme_option('Display Featured Exhibit')) && function_exists('exhibit_builder_display_random_featured_exhibit')): ?>
+  <?php echo exhibit_builder_display_random_featured_exhibit(); ?>
+  <?php endif; ?>
+</div>
+
+<?php echo foot(); ?>
