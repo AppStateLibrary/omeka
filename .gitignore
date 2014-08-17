@@ -20,11 +20,7 @@ plugins/CsvImport/csv_files/*
 plugins/EadImporter/xmldump/*
 
 # Files
-/files/original/*
-/files/fullsize/*
-/files/square_thumbnails/*
-/files/theme_uploads/*
-/files/thumbnails/*
+/files
 
 # For macs
 .DS_Store
