@@ -272,7 +272,7 @@
         padding-top: 20px;
     }
 
-    .exhibits nav.navigation {
+    .exhibits nav.navigation, .browse-navigation, .tags-navigation, .search-navigation {
         float: right;
     }
 
@@ -472,4 +472,8 @@ div#content h1 {
 
 #admin-bar {
 	padding: 5px;
+}
+
+#outputs {
+	text-align: right;
 }
