@@ -47,11 +47,12 @@ jQuery.noConflict();
 		<?php fire_plugin_hook('public_header', array('view'=>$this)); ?>
 		<div id="search-wrap">
 			<?php echo search_form(); ?><br/>
-			<a href="http://omeka.library.appstate.edu/contact">Report a problem</a>
+			<a href="/items/search">Advanced search</a> |
+			<a href="/contact">Report a problem</a>
 		</div><!-- end search -->
 
 		<div id="site-title">
-			<h1 id="head1"><a href="http://omeka.library.appstate.edu/">Digital Collections</a></h1>
+			<h1 id="head1"><a href="/">Digital Collections</a></h1>
 			<h2 id="head2"><a href="http://www.library.appstate.edu">Appalachian State University</a></h2>
 		</div>
 	</div><!-- end header -->
