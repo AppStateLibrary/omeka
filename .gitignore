@@ -19,6 +19,9 @@ plugins/Dropbox/files/*
 plugins/CsvImport/csv_files/*
 plugins/EadImporter/xmldump/*
 
+# Server log files
+/logs
+
 # Files
 /files
 
