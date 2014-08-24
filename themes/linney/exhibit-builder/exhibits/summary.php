@@ -39,23 +39,10 @@ married three times and had two children, actress Laura Linney with his first wi
 Appalachian State University Library's W. L. Eury Appalachian Collection was proud to acquire his papers in the spring of 2011. Researchers now have access to a wealth of resources with the opening of this important collection of manuscripts, photographs, correspondence, reviews, theatre programs and production posters. Linney's extensive book collection is also open for use in the Dougherty Reading Room and his theatre books are available in the Library's general collection. This exhibit commemorates and celebrates the life and work of Romulus Linney: actor, writer, teacher.
 </p>
 
-
-
-
-
-
 <p style="text-align:right">
-       <a href="/exhibits/show/romulus-linney/life">Next Page</a>
-	</p>
+       <a href="/exhibits/show/romulus-linney/life/early-life">Next Page</a>
+</p>
 
-	<!--<?php set_exhibit_sections_for_loop_by_exhibit(get_current_exhibit()); ?>
-    <h2><?php echo __('Sections'); ?></h2>
-	<?php while(loop_exhibit_sections()): ?>
-	<?php if (exhibit_builder_section_has_pages()): ?>
-    <h2><a href="<?php echo exhibit_builder_exhibit_uri(get_current_exhibit(), get_current_exhibit_section()); ?>"><?php echo html_escape(exhibit_section('title')); ?></a></h2>
-	<?php echo exhibit_section('description'); ?>
-	<?php endif; ?>
-	<?php endwhile; ?>-->
 </div>
 </div>
 <?php foot(); ?>
