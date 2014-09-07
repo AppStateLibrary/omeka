@@ -3,8 +3,8 @@
     'bodyid'=>'exhibit', 'bodyclass' => 'exhibits show'));
 ?>
 
-<div id="primary">
-	<h2><?php echo metadata('exhibit_page', 'title'); ?></h2>
+<div id="primary" class="exhibit-show">
+	<h1><?php echo metadata('exhibit_page', 'title'); ?></h1>
 
 	<?php exhibit_builder_render_exhibit_page(); ?>
 
