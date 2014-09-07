@@ -26,7 +26,6 @@
     <div id="nav-container">
         <a class="homer" style="margin-left:15px;font-size:1.6em;line-height:1.5em;text-shadow:0.5px 0.5px 0.5px #333333;color:#333;"
             href="/exhibits/show/romulus-linney/">Home</a>
-        <?php //OLD: echo exhibit_builder_nested_nav();?>
         <?php set_exhibit_pages_for_loop_by_exhibit(); ?>
         <?php if (has_loop_records('exhibit_page')): ?>
         <nav id="exhibit-pages">

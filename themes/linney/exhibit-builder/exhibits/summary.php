@@ -45,4 +45,4 @@ Appalachian State University Library's W. L. Eury Appalachian Collection was pro
 
 </div>
 </div>
-<?php foot(); ?>
+<?php echo foot(); ?>

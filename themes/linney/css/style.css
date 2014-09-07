@@ -1547,11 +1547,13 @@ a:link:after {
 #header-image,
 .navigation,
 .pagination,
+
 #exhibit-page-navigation,
 .exhibit-section-nav,
 .exhibit-page-nav {
 	display:none;
 }
+
 blockquote {
 	margin:10pt 0 0 0;
 	font-style:italic;
@@ -1613,6 +1615,14 @@ blockquote {
 	float: right;
 }
 
-#exhibit nav#admin-bar {
+nav#admin-bar {
         display: none;
+}
+
+#exhibit-page-nav {
+	margin-left: 12px;
+}
+
+#exhibit-page-nav li ul li {
+	margin-left: -16px;
 }
