@@ -1612,3 +1612,7 @@ blockquote {
 .item-pagination .next {
 	float: right;
 }
+
+#exhibit nav#admin-bar {
+        display: none;
+}
