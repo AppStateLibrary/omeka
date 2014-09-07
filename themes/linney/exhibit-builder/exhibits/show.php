@@ -14,12 +14,12 @@
     </nav>
     <?php endif; ?>
 
-<!--
+
 	<div id="exhibit-page-navigation">
-	    <?php //echo exhibit_builder_link_to_previous_exhibit_page(); ?>
-    	    <?php //echo exhibit_builder_link_to_next_exhibit_page(); ?>
+	    <?php echo exhibit_builder_link_to_previous_page(); ?>
+    	    <?php echo exhibit_builder_link_to_next_page(); ?>
 	</div>
--->
+
 </div>
 
 <div id="secondary">

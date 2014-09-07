@@ -1574,3 +1574,41 @@ blockquote {
 	font-weight: bold;
 	font-size: larger;
 }
+
+.exhibit-item-caption {
+	font-size: 1.2em;
+}
+
+.exhibit-item-caption p {
+	padding: 5px;
+	font-size: 1em;
+}
+
+.exhibit-show div {
+	padding-left: 5px;
+}
+
+.exhibit-show h1, .exhibit-show h2, .exhibit-show p {
+	padding-left: 10px;
+}
+
+.exhibit-show h2 {
+	padding-top: 10px;
+}
+
+#exhibit-page-navigation {
+	font-size: 1.3em;
+	width: 100%;
+}
+
+#exhibit-page-navigation .next-page {
+	float: right;
+}
+
+.item-pagination {
+	width: 100%;
+}
+
+.item-pagination .next {
+	float: right;
+}
