@@ -9,7 +9,7 @@
     <?php if (get_theme_option('Display Featured Item') !== '0'): ?>
     <!-- Featured Item -->
     <div id="featured-item">
-        <?php echo display_random_featured_item(true); ?>
+        <?php echo random_featured_item(true); ?>
     </div><!--end featured-item-->
     <?php endif; ?>
 
