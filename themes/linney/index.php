@@ -5,7 +5,7 @@
         <p><?php echo get_theme_option('Homepage Text'); ?></p>
 
         <div id="featured-item" class="featured-box">
-        <?php echo random_featured_item(); ?>
+        <?php echo random_featured_items(1, true); ?>
         </div><!-- end #featured-item -->
 
         <div id="featured-collection" class="featured-box">

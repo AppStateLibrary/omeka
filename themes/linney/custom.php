@@ -7,7 +7,7 @@
 
 function rhythm_display_random_featured_item_squarethumb()
 {
-    $featuredItem = random_featured_item();
+    $featuredItem = get_random_featured_items(1);
 
 	$html = '<h2>Featured <span class="type-featured">Item</span></h2>';
 	if ($featuredItem) {
