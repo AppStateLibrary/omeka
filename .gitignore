@@ -25,6 +25,9 @@ plugins/EadImporter/xmldump/*
 # Files
 /files
 
+# htaccess file (will be different for prod and dev)
+.htaccess
+
 # For macs
 .DS_Store
 
