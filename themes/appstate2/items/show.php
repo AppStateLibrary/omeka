@@ -158,6 +158,7 @@
 		jQuery(this).find(".audio-file-div").text("");
 		jQuery(this).find(".audio-file-div").html("<a href='"+audio+"'>Listen to Sound File</a>");
 	});
+	jQuery('video').css('width','75%');
 	jQuery('.element-text').each(function(){
 		var chk = $(this).text();
 		if(chk=='None'){
