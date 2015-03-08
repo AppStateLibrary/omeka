@@ -80,15 +80,15 @@
 		jQuery("div[id*='historical-photo']").each(function(){jQuery(this).addClass("historical");});
 	}
 	var blacklist=[
-		"dublin-core-date-created",
-		"dublin-core-date-modified",
-		"dublin-core-title",
+		/** "dublin-core-date-created",
+		"dublin-core-date-modified", **/
+		"dublin-core-title" /**,
 		"dublin-core-source",
 		"dublin-core-type",
 		"dublin-core-language",
 		"dublin-core-rights",
 		"dublin-core-publisher",
-		"dublin-core-format"
+		"dublin-core-format" **/
 		];
 	var blacklist2=[
 		"item-type-metadata-reference-url",
@@ -125,11 +125,11 @@
 	jQuery.each(blacklist3,function (index,value){
 		var hcheck = jQuery("div[id*="+value+"]");
 		if(!hcheck.hasClass('historical')){
-			hcheck.remove();
+			/** hcheck.remove(); **/
 		}
 	});
 	jQuery.each(blacklist2,function (index,value){
-		jQuery("div[id*="+value+"]").remove();
+		/** jQuery("div[id*="+value+"]").remove(); **/
 	});
 
 	var vidwidthcheck=0;
