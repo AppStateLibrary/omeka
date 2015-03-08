@@ -164,10 +164,11 @@ class Html5MediaPlugin extends Omeka_Plugin_AbstractPlugin
     {
         if (Zend_Registry::isRegistered('Zend_Translate')) {
             $l10n = array(
-                'language' => substr(get_html_lang(), 0, 2),
+                'language' => get_html_lang(),
                 'strings' => array(
                     'Download File' => __('Download File'),
-                    'Play/Pause' => __('Play/Pause'),
+                    'Play' => __('Play'),
+                    'Pause' => __('Pause'),
                     'Mute Toggle' => __('Mute Toggle'),
                     'Fullscreen' => __('Fullscreen'),
                     'Captions/Subtitles' => __('Captions/Subtitles'),
@@ -199,9 +200,11 @@ class Html5MediaPlugin extends Omeka_Plugin_AbstractPlugin
         $mediaOptions = '';
 
         if (isset($options['width']))
-            $mediaOptions .= ' width="' . $options['width'] . '"';
+            //BAD TEMPORARY HACK $mediaOptions .= ' width="' . $options['width'] . '"';
+            $mediaOptions .= ' width="275"';
         if (isset($options['height']))
-            $mediaOptions .= ' height="' . $options['height'] . '"';
+            //BAD TEMPORARY HACK $mediaOptions .= ' height="' . $options['height'] . '"';
+            $mediaOptions .= ' height="155"';
         if (isset($options['autoplay']) && $options['autoplay'])
             $mediaOptions .= ' autoplay';
         if (isset($options['controls']) && $options['controls'])

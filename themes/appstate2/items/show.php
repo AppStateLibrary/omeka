@@ -57,9 +57,9 @@
             </form>
         </div>
         <script>
-            $( "#requestcopy" ).submit(function( event ) {
-            var citationText = $("#citation").text();
-            $("input[name='item']").val(citationText); });
+            jQuery("#requestcopy").submit(function(event) {
+            var citationText = jQuery("#citation").text();
+            jQuery("input[name='item']").val(citationText); });
 	</script>
     </div>
 
@@ -77,7 +77,7 @@
     jQuery(document).ready(function () {
 	var histcheck = jQuery("#collection a").text();
 	if(histcheck=="Appalachian State University Historical Photos"){
-		jQuery("div[id*='historical-photo']").each(function(){$(this).addClass("historical");});
+		jQuery("div[id*='historical-photo']").each(function(){jQuery(this).addClass("historical");});
 	}
 	var blacklist=[
 		"dublin-core-date-created",
@@ -160,9 +160,9 @@
 	});
 	jQuery('video').css('width','75%');
 	jQuery('.element-text').each(function(){
-		var chk = $(this).text();
+		var chk = jQuery(this).text();
 		if(chk=='None'){
-			$(this).parent().hide();
+			jQuery(this).parent().hide();
 		}
 	});
 });

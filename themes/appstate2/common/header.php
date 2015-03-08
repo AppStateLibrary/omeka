@@ -28,13 +28,6 @@ echo head_css();
 ?>
 
 <!-- JavaScripts -->
-<?php queue_js_file('vendor/jquery'); ?>
-<script type="text/javascript">
-jQuery.noConflict();
-    jQuery(document).ready(function () {
-	jQuery("#submit_search").val("Search Digital Collections");
-});
-</script>
 <?php echo head_js(); ?>
 </head>
 
