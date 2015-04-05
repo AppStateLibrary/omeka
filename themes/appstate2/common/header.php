@@ -40,7 +40,7 @@ echo head_css();
 		<?php fire_plugin_hook('public_header', array('view'=>$this)); ?>
 		<div id="search-wrap">
 			<?php echo search_form(); ?><br/>
-			<a href="/items/search">Advanced search</a> |
+			<!-- <a href="/items/search">Advanced search</a> | -->
 			<a href="/contact">Report a problem</a>
 		</div><!-- end search -->
 
