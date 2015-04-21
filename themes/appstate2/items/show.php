@@ -56,6 +56,7 @@
                 <input type="hidden" name="cartData" value=""><input type="submit" value="Submit Order">
             </form>
         </div>
+        <span id="cart-items"></span>
     </div>
 
 </div><!-- end secondary -->
@@ -208,31 +209,28 @@
     };
 
   // Submit order to cart API
-    jQuery('.cart-controls').on("click", ".btn-add-to-cart", function(cartContents){
+    jQuery('.cart-controls').on("click", ".btn-add-to-cart", function(){
         var fileName = jQuery(this).attr('title');
+        var file = jQuery(this).attr('title').split(".");
         var buttonId = jQuery(this).attr('id');
         var divId = jQuery(this).attr('id').split("_");
-        var itemsRequested = {
-            "fileName": fileName
-        }
         jQuery("#"+buttonId).hide();
         jQuery("#info_"+divId[1]).hide();
-        jQuery("#"+divId[1]).append('<span class="cart-item-msg" id="msg_'+divId[1]+'"><img src="/themes/appstate2/images/greencheck.gif">file added <button class="btn-remove-from-cart" id="'+buttonId+'"><img src="/themes/appstate2/images/redx.gif"></span>');
+        jQuery("#"+divId[1]).append('<span class="cart-item-msg" id="msg_'+divId[1]+'"><img src="/themes/appstate2/images/greencheck.gif">file added <button class="btn-remove-from-cart" id="'+buttonId+'" title="'+fileName+'"><img src="/themes/appstate2/images/redx.gif"></span>');
         //console.log('the buttonId value is '+buttonId );
         //cartContents.data.push(itemsRequested);
         //console.log('the stringify results are' + JSON.stringify(cartContents));
+        jQuery("#cart-items").append('<p class="cart-files" id="'+file[0]+'" title="'+fileName+'"></p>');
     });
 
-    jQuery('.cart-controls').on("click", ".btn-remove-from-cart", function(cartContents){
-            var fileName = jQuery(this).attr('title');
+    jQuery('.cart-controls').on("click", ".btn-remove-from-cart", function(){
+            var file = jQuery(this).attr('title').split(".");
             var buttonId = jQuery(this).attr('id');
             var divId = jQuery(this).attr('id').split("_");
-            var itemsRequested = {
-                "fileName": fileName
-            }
             jQuery("#info_"+divId[1]).show();
             jQuery("#"+buttonId).show();
             jQuery("#msg_"+divId[1]).remove();
+            jQuery("#"+file[0]).remove();
             //cartContents.data.push(itemsRequested);
             //console.log('the stringify results are' + JSON.stringify(cartContents));
     });
