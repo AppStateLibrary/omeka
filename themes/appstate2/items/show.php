@@ -52,8 +52,8 @@
         <div id="citation" class="element-text"><?php echo html_entity_decode(metadata($item, 'citation')); ?></div>
         <!-- Custom code to submit a request and prepopulate duplication form -->
         <div class="element-text">
-            <form id="submit-cart-contents" action="http://library-cart.dev/store/requestcopy" method="post">
-                <input type="hidden" name="item" value=""><input type="submit" value="Submit Order">
+            <form id="submit-cart-contents" action="http://library-cart.dev/store/externalorder" method="post">
+                <input type="hidden" name="cartData" value=""><input type="submit" value="Submit Order">
             </form>
         </div>
     </div>
@@ -148,24 +148,26 @@
 		jQuery("#content").css("overflow","visible");
 	}
 
-    jQuery('#itemfiles .audio-mpeg').each(function(){
+    jQuery('#itemfiles .audio-mpeg').each(function(index){
         var fileName=jQuery(this).find(".audio-file-div").text();
+        var id="audio-item-" + index;
         var audio=jQuery(this).find(".download-file").attr("href");
         jQuery(this).find(".audio-file-div").text("");
         jQuery(this).find(".audio-file-div").html("<a href='"+audio+"'>Listen to Sound File</a>");
 
-        jQuery(this).append('<div class="cart-controls"><button type="button" class="btn-add-to-cart" title="'+fileName+'">Request this item</button>');
-        jQuery(this).append('<span class="add-to-cart-info" title="Click the Request this item button to add this sound file to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span></div>');
+        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
+        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" title="Click the Request this item button to add this sound file to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
 
     });
 
-    jQuery('#itemfiles .image-jpeg').each(function(){
+    jQuery('#itemfiles .image-jpeg').each(function(index){
         var fileName=jQuery(this).find(".download-file img").attr("title");
+        var id="image-item-" + index;
 
-        jQuery(this).append('<div class="cart-controls"><button type="button" class="btn-add-to-cart" title="'+fileName+'">Request this item</button>');
-        jQuery(this).append('<span class="add-to-cart-info" title="Click the Request this item button to add this photograph to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span></div>');
-
+        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
+        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" title="Click the Request this item button to add this sound file to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
     });
+
     jQuery(".application-pdf .audio-file-div").text("Download PDF");
 
 	jQuery('video').css('width','75%');
@@ -178,51 +180,67 @@
 
 //JP code
 
-    jQuery('btn-add-to-cart').click(function(){
-        jQuery('btn-add-to-cart').append(" <b>file appended</b>.");
+    // Tooltip for order buttons
+    jQuery('.add-to-cart-info').hover(function(){
+        // Hover over code
+        var title = $(this).attr('title');
+        $(this).data('tipText', title).removeAttr('title');
+        $('<p class="tooltip"></p>')
+            .text(title)
+            .appendTo('body')
+            .fadeIn('');
+    }, function() {
+        // Hover out code
+        $(this).attr('title', $(this).data('tipText'));
+        $('.tooltip').remove();
+    }).mousemove(function(e) {
+        var mousex = e.pageX + 20; //Get X coordinates
+        var mousey = e.pageY + 10; //Get Y coordinates
+        $('.tooltip')
+            .css({ top: mousey, left: mousex })
     });
+   // Add and remove items to and from cart
 
-    var citationText = jQuery('#citation').text();
-	//var cartObject = {};
-    //var itemsRequested = [];
-    //cartObject.itemsRequested = itemsRequested;
-    var cartObject = {
-        citationText: citationText,
-        itemsRequested: []
+    var citationText = jQuery("#citation").text().split(":");
+    var cartContents = {
+        citationText: citationText[1],
+        data: '{"itemsRequested":[];}'
     };
 
-    var fileName = "John";
-    var fileFormat = "Smith";
-    var item = {
-            "fileName": fileName,
-            "fileFormat": fileFormat
+  // Submit order to cart API
+    jQuery('.cart-controls').on("click", ".btn-add-to-cart", function(cartContents){
+        var fileName = jQuery(this).attr('title');
+        var buttonId = jQuery(this).attr('id');
+        var divId = jQuery(this).attr('id').split("_");
+        var itemsRequested = {
+            "fileName": fileName
         }
-
-    cartObject.itemsRequested.push(item);
-
-    jQuery('#submit-cart-contents').submit(function(event) {
-        jQuery('input[name="item"]').val(cartObject);
+        jQuery("#"+buttonId).hide();
+        jQuery("#info_"+divId[1]).hide();
+        jQuery("#"+divId[1]).append('<span class="cart-item-msg" id="msg_'+divId[1]+'"><img src="/themes/appstate2/images/greencheck.gif">file added <button class="btn-remove-from-cart" id="'+buttonId+'"><img src="/themes/appstate2/images/redx.gif"></span>');
+        //console.log('the buttonId value is '+buttonId );
+        //cartContents.data.push(itemsRequested);
+        //console.log('the stringify results are' + JSON.stringify(cartContents));
     });
 
-        // Tooltip for order buttons
-        jQuery('.add-to-cart-info').hover(function(){
-            // Hover over code
-            var title = $(this).attr('title');
-            $(this).data('tipText', title).removeAttr('title');
-            $('<p class="tooltip"></p>')
-                .text(title)
-                .appendTo('body')
-                .fadeIn('');
-        }, function() {
-            // Hover out code
-            $(this).attr('title', $(this).data('tipText'));
-            $('.tooltip').remove();
-        }).mousemove(function(e) {
-            var mousex = e.pageX + 20; //Get X coordinates
-            var mousey = e.pageY + 10; //Get Y coordinates
-            $('.tooltip')
-                .css({ top: mousey, left: mousex })
-        });
+    jQuery('.cart-controls').on("click", ".btn-remove-from-cart", function(cartContents){
+            var fileName = jQuery(this).attr('title');
+            var buttonId = jQuery(this).attr('id');
+            var divId = jQuery(this).attr('id').split("_");
+            var itemsRequested = {
+                "fileName": fileName
+            }
+            jQuery("#info_"+divId[1]).show();
+            jQuery("#"+buttonId).show();
+            jQuery("#msg_"+divId[1]).remove();
+            //cartContents.data.push(itemsRequested);
+            //console.log('the stringify results are' + JSON.stringify(cartContents));
+    });
+
+  jQuery('#submit-cart-contents').submit(function(event) {
+      jQuery('input[name="cartData"]').val(cartContents);
+  });
+
 });
 </script>
 
