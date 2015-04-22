@@ -52,11 +52,16 @@
         <div id="citation" class="element-text"><?php echo html_entity_decode(metadata($item, 'citation')); ?></div>
         <!-- Custom code to submit a request and prepopulate duplication form -->
         <div class="element-text">
-            <form id="submit-cart-contents" action="http://library-cart.dev/store/externalorder" method="post">
-                <input type="hidden" name="cartData" value=""><input type="submit" value="Submit Order">
+            <form id="cart-contents" action="http://library-cart.dev/store/externalorder" method="post">
+                <div id="cart-items">
+                    <input type="hidden" name="record" id="cart-record">
+                    <input type="hidden" name="data" id="cart-data">
+                </div>
+            <input type="submit" id="btn_cart-submit" value="Submit Order" style="cursor:pointer;background-color: #269abc;font-size: medium;color:#ffffff;padding: 10px;border-radius: 10%;">
             </form>
+            <p>Items in your cart = <span id="cart-count">0</span> </p>
         </div>
-        <span id="cart-items"></span>
+
     </div>
 
 </div><!-- end secondary -->
@@ -156,7 +161,7 @@
         jQuery(this).find(".audio-file-div").text("");
         jQuery(this).find(".audio-file-div").html("<a href='"+audio+"'>Listen to Sound File</a>");
 
-        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
+        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
         jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" title="Click the Request this item button to add this sound file to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
 
     });
@@ -165,7 +170,7 @@
         var fileName=jQuery(this).find(".download-file img").attr("title");
         var id="image-item-" + index;
 
-        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
+        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
         jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" title="Click the Request this item button to add this sound file to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
     });
 
@@ -202,11 +207,13 @@
     });
    // Add and remove items to and from cart
 
-    var citationText = jQuery("#citation").text().split(":");
-    var cartContents = {
-        citationText: citationText[1],
-        data: '{"itemsRequested":[];}'
-    };
+        jQuery.fn.extend({
+            cartcount: function () {
+                var cartCount = jQuery("#cart-items input[id*='file_']").length;
+                return cartCount;
+            }
+        });
+
 
   // Submit order to cart API
     jQuery('.cart-controls').on("click", ".btn-add-to-cart", function(){
@@ -216,11 +223,10 @@
         var divId = jQuery(this).attr('id').split("_");
         jQuery("#"+buttonId).hide();
         jQuery("#info_"+divId[1]).hide();
-        jQuery("#"+divId[1]).append('<span class="cart-item-msg" id="msg_'+divId[1]+'"><img src="/themes/appstate2/images/greencheck.gif">file added <button class="btn-remove-from-cart" id="'+buttonId+'" title="'+fileName+'"><img src="/themes/appstate2/images/redx.gif"></span>');
-        //console.log('the buttonId value is '+buttonId );
-        //cartContents.data.push(itemsRequested);
-        //console.log('the stringify results are' + JSON.stringify(cartContents));
-        jQuery("#cart-items").append('<p class="cart-files" id="'+file[0]+'" title="'+fileName+'"></p>');
+        jQuery("#"+divId[1]).append('<span class="cart-item-msg" id="msg_'+divId[1]+'"><img src="/themes/appstate2/images/greencheck.gif">file added <button class="btn-remove-from-cart" id="'+buttonId+'" title="'+fileName+'" style="cursor:pointer"><img src="/themes/appstate2/images/redx.gif"></span>');
+        jQuery("#cart-record").append('<input type="hidden" name="files" id="file_'+divId[1]+'" value="'+fileName+'">');
+        var cartCount = jQuery().cartcount();
+        jQuery("#cart-count").text(cartCount);
     });
 
     jQuery('.cart-controls').on("click", ".btn-remove-from-cart", function(){
@@ -230,14 +236,26 @@
             jQuery("#info_"+divId[1]).show();
             jQuery("#"+buttonId).show();
             jQuery("#msg_"+divId[1]).remove();
-            jQuery("#"+file[0]).remove();
-            //cartContents.data.push(itemsRequested);
-            //console.log('the stringify results are' + JSON.stringify(cartContents));
+            jQuery("#file_"+divId[1]).remove();
+        var cartCount = jQuery().cartcount();
+        jQuery("#cart-count").text(cartCount);
     });
 
-  jQuery('#submit-cart-contents').submit(function(event) {
-      jQuery('input[name="cartData"]').val(cartContents);
-  });
+
+
+    jQuery('#cart-contents').submit(function(event) {
+      var citation = jQuery("#citation").text().split(":");
+      var citationTitle = citation[0];
+      var citationURL = citation[1].substring(0, citation[1].length -1);
+      var cartCount = jQuery().cartcount();
+
+      if (cartCount < 1){
+            event.preventDefault();
+      } else {
+          jQuery("input[name='item']").val(cartObject);
+      }
+
+    });
 
 });
 </script>
