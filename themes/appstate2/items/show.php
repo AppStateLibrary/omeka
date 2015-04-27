@@ -53,13 +53,14 @@
         <!-- Custom code to submit a request and prepopulate duplication form -->
         <div class="element-text">
             <form id="cart-contents" action="http://library-cart.dev/store/externalorder" method="post">
+                <input type="hidden" name="citation">
+                <input type="hidden" name="metadata" id="meta-data">
+                <input type="hidden" name="data" id="cart-data">
                 <div id="cart-items">
-                    <input type="hidden" name="record" id="cart-record">
-                    <input type="hidden" name="data" id="cart-data">
                 </div>
-            <input type="submit" id="btn_cart-submit" value="Submit Order" style="cursor:pointer;background-color: #269abc;font-size: medium;color:#ffffff;padding: 10px;border-radius: 10%;">
+            <input type="submit" id="btn_cart-submit" value="Submit Order" style="display:none;cursor:pointer;background-color: #269abc;font-size: medium;color:#ffffff;padding: 10px;border-radius: 10%;">
             </form>
-            <p>Items in your cart = <span id="cart-count">0</span> </p>
+            <p id="cart-status" style="display:none;">Items in your cart = <span id="cart-count">0</span> </p>
         </div>
 
     </div>
@@ -214,6 +215,20 @@
             }
         });
 
+        jQuery.fn.extend({
+            togglesubmission: function () {
+                var cartCount = jQuery().cartcount();
+                if (cartCount > 0){
+                    jQuery("#btn_cart-submit").show();
+                    jQuery("#cart-count").text(cartCount);
+                    jQuery("#cart-status").show();
+                } else {
+                    jQuery("#btn_cart-submit").hide();
+                    jQuery("#cart-status").hide();
+                }
+
+            }
+        });
 
   // Submit order to cart API
     jQuery('.cart-controls').on("click", ".btn-add-to-cart", function(){
@@ -224,9 +239,8 @@
         jQuery("#"+buttonId).hide();
         jQuery("#info_"+divId[1]).hide();
         jQuery("#"+divId[1]).append('<span class="cart-item-msg" id="msg_'+divId[1]+'"><img src="/themes/appstate2/images/greencheck.gif">file added <button class="btn-remove-from-cart" id="'+buttonId+'" title="'+fileName+'" style="cursor:pointer"><img src="/themes/appstate2/images/redx.gif"></span>');
-        jQuery("#cart-record").append('<input type="hidden" name="files" id="file_'+divId[1]+'" value="'+fileName+'">');
-        var cartCount = jQuery().cartcount();
-        jQuery("#cart-count").text(cartCount);
+        jQuery("#cart-items").append('<input type="hidden" name="files[]" id="file_'+divId[1]+'" value="'+fileName+'">');
+        jQuery().togglesubmission();
     });
 
     jQuery('.cart-controls').on("click", ".btn-remove-from-cart", function(){
@@ -237,26 +251,21 @@
             jQuery("#"+buttonId).show();
             jQuery("#msg_"+divId[1]).remove();
             jQuery("#file_"+divId[1]).remove();
-        var cartCount = jQuery().cartcount();
-        jQuery("#cart-count").text(cartCount);
+            jQuery().togglesubmission();
     });
 
 
-
-    jQuery('#cart-contents').submit(function(event) {
+  jQuery('#cart-contents').submit(function(event) {
       var citation = jQuery("#citation").text().split(":");
-      var citationTitle = citation[0];
-      var citationURL = citation[1].substring(0, citation[1].length -1);
-      var cartCount = jQuery().cartcount();
+      var citationInfo = citation[0];
 
-      if (cartCount < 1){
-            event.preventDefault();
-      } else {
-          jQuery("input[name='item']").val(cartObject);
-      }
-
-    });
-
+      jQuery("input[name='citation']").val(citationInfo);
+      var frmMetadata = JSON.stringify(jQuery("input[name='path'], input[name='citation']").serializeArray());
+      var frmData = JSON.stringify(jQuery("input[name='files[]']").serializeArray());
+      jQuery("#cart-data").val(frmData);
+      jQuery("#meta-data").val(frmMetadata);
+      jQuery("input[name='citation'], input[name='files[]']").remove();
+  });
 });
 </script>
 
