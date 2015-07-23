@@ -52,7 +52,7 @@
         <div id="citation" class="element-text"><?php echo html_entity_decode(metadata($item, 'citation')); ?></div>
         <!-- Custom code to submit a request and prepopulate duplication form -->
         <div class="element-text">
-            <form id="cart-contents" action="http://library-cart.dev/store/externalorder" method="post">
+            <form id="cart-contents" action="https://cart.library.appstate.edu/store/externalorder" method="post">
                 <input type="hidden" name="citation">
                 <input type="hidden" name="metadata" id="meta-data">
                 <input type="hidden" name="data" id="cart-data">
@@ -257,7 +257,7 @@
 
   jQuery('#cart-contents').submit(function(event) {
       var citation = jQuery("#citation").text().split(":");
-      var citationInfo = citation[0];
+      var citationInfo = citation[0] + citation[1];
 
       jQuery("input[name='citation']").val(citationInfo);
       var frmMetadata = JSON.stringify(jQuery("input[name='path'], input[name='citation']").serializeArray());
