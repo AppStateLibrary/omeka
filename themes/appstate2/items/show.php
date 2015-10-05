@@ -163,7 +163,7 @@
         jQuery(this).find(".audio-file-div").html("<a href='"+audio+"'>Listen to Sound File</a>");
 
         jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
-        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" title="Click the Request this item button to add this sound file to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
+        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="Requests will incur charges. Click “Request This Item” to add item to your basket. Click “Submit Order” at the bottom of this column to review charges before payment."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
 
     });
 
@@ -172,7 +172,7 @@
         var id="image-item-" + index;
 
         jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
-        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" title="Click the Request this item button to add this sound file to your order and when finished selecting files to be included in your order, click the Submit Order button below to proceed to the shopping cart checkout process."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
+        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="Requests will incur charges. Click “Request This Item” to add item to your basket. Click “Submit Order” at the bottom of this column to review charges before payment."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
     });
 
     jQuery(".application-pdf .audio-file-div").text("Download PDF");
@@ -188,24 +188,34 @@
 //JP code
 
     // Tooltip for order buttons
-    jQuery('.add-to-cart-info').hover(function(){
-        // Hover over code
-        var title = $(this).attr('title');
-        $(this).data('tipText', title).removeAttr('title');
-        $('<p class="tooltip"></p>')
-            .text(title)
-            .appendTo('body')
-            .fadeIn('');
-    }, function() {
-        // Hover out code
-        $(this).attr('title', $(this).data('tipText'));
-        $('.tooltip').remove();
-    }).mousemove(function(e) {
-        var mousex = e.pageX + 20; //Get X coordinates
-        var mousey = e.pageY + 10; //Get Y coordinates
-        $('.tooltip')
-            .css({ top: mousey, left: mousex })
-    });
+        jQuery('.cart-controls').on("click", ".add-to-cart-info", function() {
+            jQuery(this).tooltip(
+                {
+                    items: ".add-to-cart-info",
+                    content: function(){
+                        return jQuery(this).data('description');
+                    },
+                    close: function( event, ui ) {
+                        var me = this;
+                        ui.tooltip.hover(
+                            function () {
+                                jQuery(this).stop(true).fadeTo(400, 1);
+                            },
+                            function () {
+                                jQuery(this).fadeOut("400", function(){
+                                    jQuery(this).remove();
+                                });
+                            }
+                        );
+                        ui.tooltip.on("remove", function(){
+                            jQuery(me).tooltip("destroy");
+                        });
+                    },
+                }
+            );
+            jQuery(this).tooltip("open");
+        });
+
    // Add and remove items to and from cart
 
         jQuery.fn.extend({
