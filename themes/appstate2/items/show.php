@@ -162,8 +162,8 @@
         jQuery(this).find(".audio-file-div").text("");
         jQuery(this).find(".audio-file-div").html("<a href='"+audio+"'>Listen to Sound File</a>");
 
-        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
-        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="Requests will incur charges. Click “Request This Item” to add item to your basket. Click “Submit Order” at the bottom of this column to review charges before payment."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
+        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Add to cart</button></div>');
+        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="Please note that there is a charge to receive a copy of this item. Click &quot;Add to cart&quot; to add item to your basket. Click &quot;Submit Order&quot; at the bottom of this column to complete your shopping cart transaction. You will have the opportunity to review charges before payment."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom;cursor:pointer" /></span>');
 
     });
 
@@ -171,11 +171,21 @@
         var fileName=jQuery(this).find(".download-file img").attr("title");
         var id="image-item-" + index;
 
-        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Request this item</button></div>');
-        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="Requests will incur charges. Click “Request This Item” to add item to your basket. Click “Submit Order” at the bottom of this column to review charges before payment."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom" /></span>');
+        jQuery(this).append('<div class="cart-controls" id="'+id+'"><button type="button" style="cursor:pointer" class="btn-add-to-cart" id="btn_'+id+'" title="'+fileName+'">Add to cart</button></div>');
+        jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="Please note that there is a charge to receive a copy of this item. Click &quot;Add to cart&quot; to add item to your basket. Click &quot;Submit Order&quot; at the bottom of this column to complete your shopping cart transaction. You will have the opportunity to review charges before payment."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom;cursor:pointer" /></span>');
     });
 
-    jQuery(".application-pdf .audio-file-div").text("Download PDF");
+//    jQuery(".application-pdf .audio-file-div").text("Download PDF");
+
+        jQuery('#itemfiles .application-pdf').each(function(index){
+            var pdf=jQuery(this).find(".download-file").attr("href");
+            var id="pdf-item-" + index;
+            jQuery(this).find(".audio-file-div").text("");
+            jQuery(this).find(".audio-file-div").html("<a href='"+pdf+"'>Download PDF</a>");
+
+            jQuery(this).append('<div class="cart-controls" id="'+id+'"><button>Instructions for PDF--></button></div>');
+            jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="To view a pdf document left-click on the “Download PDF” link. The document will open in the pdf viewer. Printing and saving can also be accomplished by right clicking on the object and selecting either print or save."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom;cursor:pointer" " /></span>');
+        });
 
 	jQuery('video').css('width','75%');
 	jQuery('.element-text').each(function(){
@@ -188,7 +198,7 @@
 //JP code
 
     // Tooltip for order buttons
-        jQuery('.cart-controls').on("click", ".add-to-cart-info", function() {
+        jQuery('.add-to-cart-info').on("click", "#info", function() {
             jQuery(this).tooltip(
                 {
                     items: ".add-to-cart-info",
