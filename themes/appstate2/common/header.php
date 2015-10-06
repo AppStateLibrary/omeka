@@ -24,6 +24,7 @@
 <!-- Stylesheets -->
 <?php
 queue_css_file(array('style'));
+queue_css_url('https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css');
 echo head_css();
 ?>
 
