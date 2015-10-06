@@ -184,7 +184,7 @@
             jQuery(this).find(".audio-file-div").html("<a href='"+pdf+"'>Download PDF</a>");
 
             jQuery(this).append('<div class="cart-controls" id="'+id+'"><button>Instructions for PDF--></button></div>');
-            jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="To view a pdf document left-click on the “Download PDF” link. The document will open in the pdf viewer. Printing and saving can also be accomplished by right clicking on the object and selecting either print or save."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom;cursor:pointer" " /></span>');
+            jQuery("#"+id).append('<span class="add-to-cart-info" id="info_'+id+'" data-description="To view a pdf document, left-click on the &quot;Download PDF&quot; link. The document will open in the pdf viewer. To save or print, right-click on the document after it is open and select either save or print."><img id="info" src="/themes/appstate2/images/info.png" style="vertical-align:bottom;cursor:pointer" " /></span>');
         });
 
 	jQuery('video').css('width','75%');
