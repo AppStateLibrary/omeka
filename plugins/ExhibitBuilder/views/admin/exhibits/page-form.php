@@ -43,7 +43,7 @@ echo head(array('title'=> $title, 'bodyclass'=>'exhibits'));
         <div class="add-block">
             <h2><?php echo __('New Block'); ?></h2>
             <div class="layout-select">
-                <h4><?php echo __('Select layout'); ?></h3>
+                <h3><?php echo __('Select layout'); ?></h3>
                 <div class="layout-thumbs">
                 <?php
                     $layouts = ExhibitLayout::getLayouts();
@@ -117,7 +117,7 @@ echo head(array('title'=> $title, 'bodyclass'=>'exhibits'));
 jQuery(document).ready(function () {
     Omeka.ExhibitBuilder.setUpBlocks(<?php echo json_encode(url('exhibits/block-form')); ?>);
     Omeka.ExhibitBuilder.setUpItemsSelect(<?php echo js_escape(url('exhibits/attachment-item-options')); ?>);
-    Omeka.ExhibitBuilder.setUpAttachments(<?php echo js_escape(url('exhibits/attachment')); ?>);
+    Omeka.ExhibitBuilder.setUpAttachments(<?php echo js_escape(url('exhibits/attachment')); ?>, <?php echo js_escape(url('exhibits/attachment-item-options')); ?>);
     <?php
     if ($exhibit_page->exists()) {
         $validateUrl = url(
