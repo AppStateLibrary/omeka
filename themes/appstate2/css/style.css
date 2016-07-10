@@ -470,10 +470,39 @@ div#content h1 {
 	margin-bottom: 10px;
 }
 
+.solr {
+	padding-bottom: 20px;
+	padding-top: 10px;
+}
+
+.pagination {
+	margin-left: 240px;
+}
+
+#solr-results {
+	padding-left: 40px;
+}
+
+#solr-results h2 {
+	padding-top: 18px;
+}
+
+#solr-facets {
+	padding-top: 20px;
+}
+
+#solr-facets h2 {
+	padding-bottom: 10px;
+}
+
 #admin-bar {
 	padding: 5px;
 }
 
 #outputs {
 	text-align: right;
+}
+
+#solr-applied-facets ul li + li:before {
+  content: "| ";
 }
