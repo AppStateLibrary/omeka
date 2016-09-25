@@ -17,6 +17,7 @@
 # Unlike the upstream Omeka, we want themes and plugins
 plugins/Dropbox/files/*
 plugins/CsvImport/csv_files/*
+plugins/CsvImport/files/*
 plugins/EadImporter/xmldump/*
 
 # Server log files
