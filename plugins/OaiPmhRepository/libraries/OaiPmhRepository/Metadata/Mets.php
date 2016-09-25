@@ -2,8 +2,7 @@
 /**
  * @package OaiPmhRepository
  * @subpackage MetadataFormats
- * @author John Flatness
- * @copyright Copyright 2012 John Flatness
+ * @copyright Copyright 2012-2014 John Flatness
  * @license http://www.gnu.org/licenses/gpl-3.0.txt
  */
 
@@ -14,7 +13,7 @@
  * @package OaiPmhRepository
  * @subpackage Metadata Formats
  */
-class OaiPmhRepository_Metadata_Mets extends OaiPmhRepository_Metadata_Abstract
+class OaiPmhRepository_Metadata_Mets implements OaiPmhRepository_Metadata_FormatInterface
 {
     /** OAI-PMH metadata prefix */
     const METADATA_PREFIX = 'mets';
@@ -35,29 +34,25 @@ class OaiPmhRepository_Metadata_Mets extends OaiPmhRepository_Metadata_Abstract
      * and further children for each of the Dublin Core fields present in the
      * item.
      */
-    public function appendMetadata($metadataElement)
+    public function appendMetadata($item, $metadataElement)
     {
-        $mets = $this->document->createElementNS(
+        $document = $metadataElement->ownerDocument;
+        $mets = $document->createElementNS(
             self::METADATA_NAMESPACE, 'mets');
         $metadataElement->appendChild($mets);
 
-        /* Must manually specify XML schema uri per spec, but DOM won't include
-         * a redundant xmlns:xsi attribute, so we just set the attribute
-         */
-        $mets->setAttribute('xmlns:xsi', self::XML_SCHEMA_NAMESPACE_URI);
-        $mets->setAttribute('xsi:schemaLocation', self::METADATA_NAMESPACE
-            .' '.self::METADATA_SCHEMA);
+        $mets->declareSchemaLocation(self::METADATA_NAMESPACE, self::METADATA_SCHEMA);
 
         $mets->setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
 
-        $metadataSection = $this->appendNewElement($mets, 'dmdSec');
-        $itemDmdId = 'dmd-' . $this->item->id;
+        $metadataSection = $mets->appendNewElement('dmdSec');
+        $itemDmdId = 'dmd-' . $item->id;
         $metadataSection->setAttribute('ID', $itemDmdId);
-        $dcWrap = $this->appendNewElement($metadataSection, 'mdWrap');
+        $dcWrap = $metadataSection->appendNewElement('mdWrap');
         $dcWrap->setAttribute('MDTYPE', 'DC');       
         
         
-        $dcXml = $this->appendNewElement($dcWrap, 'xmlData');
+        $dcXml = $dcWrap->appendNewElement('xmlData');
         $dcXml->setAttribute('xmlns:dc', self::DC_NAMESPACE_URI);
 
         $dcElementNames = array( 'title', 'creator', 'subject', 'description',
@@ -68,25 +63,32 @@ class OaiPmhRepository_Metadata_Mets extends OaiPmhRepository_Metadata_Abstract
         foreach($dcElementNames as $elementName)
         {
             $upperName = Inflector::camelize($elementName);
-            $dcElements = $this->item->getElementTexts(
+            $dcElements = $item->getElementTexts(
                'Dublin Core', $upperName);
+
+            // Prepend the item type, if any.
+            if ($elementName == 'type' && get_option('oaipmh_repository_expose_item_type')) {
+                if ($dcType = $item->getProperty('item_type_name')) {
+                    $dcXml->appendNewElement('dc:type', $dcType);
+                }
+            }
+
             foreach($dcElements as $elementText)
             {
-                $this->appendNewElement($dcXml,
-                    'dc:'.$elementName, $elementText->text);
+                $dcXml->appendNewElement('dc:'.$elementName, $elementText->text);
             }
         }
         $fileIds = array();
-        if (metadata($this->item,'has files')) {          
-            $fileSection = $this->appendNewElement($mets, 'fileSec');
-            $fileGroup = $this->appendNewElement($fileSection, 'fileGrp');
+        if (get_option('oaipmh_repository_expose_files') && metadata($item, 'has files')) {
+            $fileSection = $mets->appendNewElement('fileSec');
+            $fileGroup = $fileSection->appendNewElement('fileGrp');
             $fileGroup->setAttribute('USE', 'ORIGINAL');
             
-            foreach ($this->item->getFiles() as $file) {               
+            foreach ($item->getFiles() as $file) {               
                 $fileDmdId = "dmd-file-" . $file->id;
                 $fileId = 'file-' . $file->id;
                 
-                $fileElement = $this->appendNewElement($fileGroup, 'file');
+                $fileElement = $fileGroup->appendNewElement('file');
                 $fileElement->setAttribute('xmlns:dc', self::DC_NAMESPACE_URI);
                 $fileElement->setAttribute('ID', $fileId);
                 $fileElement->setAttribute('MIMETYPE', $file->mime_type);
@@ -94,20 +96,20 @@ class OaiPmhRepository_Metadata_Mets extends OaiPmhRepository_Metadata_Abstract
                 $fileElement->setAttribute('CHECKSUMTYPE', 'MD5');
                 $fileElement->setAttribute('DMDID', $fileDmdId);
                      
-                $location = $this->appendNewElement($fileElement, 'FLocat');
+                $location = $fileElement->appendNewElement('FLocat');
                 
                 $location->setAttribute('LOCTYPE', 'URL');
                 $location->setAttribute('xlink:type', 'simple');
                 $location->setAttribute('xlink:title', $file->original_filename);
                 $location->setAttribute('xlink:href',$file->getWebPath('original'));              
                
-                $fileContentMetadata = $this->appendNewElement($mets, 'dmdSec');
+                $fileContentMetadata = $mets->appendNewElement('dmdSec');
                 $fileContentMetadata->setAttribute('ID' , $fileDmdId);
                 
-                $fileDcWrap = $this->appendNewElement($fileContentMetadata, 'mdWrap');
+                $fileDcWrap = $fileContentMetadata->appendNewElement('mdWrap');
                 $fileDcWrap->setAttribute('MDTYPE', 'DC');         
                 
-                $fileDcXml = $this->appendNewElement($fileDcWrap, 'xmlData');
+                $fileDcXml = $fileDcWrap->appendNewElement('xmlData');
                 $fileDcXml->setAttribute('xmlns:dc', self::DC_NAMESPACE_URI);
                 
                 $fileIds[] = $fileId;
@@ -118,55 +120,22 @@ class OaiPmhRepository_Metadata_Mets extends OaiPmhRepository_Metadata_Abstract
                     $dcElements = metadata($file,array('Dublin Core',$upperName));
                      
                     if(isset($dcElements)){
-                          $this->appendNewElement($fileDcXml,
-                          'dc:'.$elementName, $dcElements);
+                        $fileDcXml->appendNewElement('dc:'.$elementName, $dcElements);
                     }
                 }
-  
-              
+
                 release_object($file);
             }
         }
 
-        $structMap = $this->appendNewElement($mets, 'structMap');
-        $topDiv = $this->appendNewElement($structMap, 'div');
+        $structMap = $mets->appendNewElement('structMap');
+        $topDiv = $structMap->appendNewElement('div');
         $topDiv->setAttribute('DMDID', $itemDmdId);
         foreach($fileIds as $id){
-            $fptr = $this->appendNewElement($topDiv, 'fptr');
+            $fptr = $topDiv->appendNewElement('fptr');
             $fptr->setAttribute('FILEID', $id);
         }
     }
-
-    /**
-     * Returns the OAI-PMH metadata prefix for the output format.
-     *
-     * @return string Metadata prefix
-     */
-    public function getMetadataPrefix()
-    {
-        return self::METADATA_PREFIX;
-    }
-
-    /**
-     * Returns the XML schema for the output format.
-     *
-     * @return string XML schema URI
-     */
-    public function getMetadataSchema()
-    {
-        return self::METADATA_SCHEMA;
-    }
-
-    /**
-     * Returns the XML namespace for the output format.
-     *
-     * @return string XML namespace URI
-     */
-    public function getMetadataNamespace()
-    {
-        return self::METADATA_NAMESPACE;
-    }
-    
     
     protected function getFileMetadata($file)
     {
