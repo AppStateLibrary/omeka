@@ -2,12 +2,9 @@
 /**
  * @package OaiPmhRepository
  * @subpackage Libraries
- * @author John Flatness, Yu-Hsun Lin
- * @copyright Copyright 2009 John Flatness, Yu-Hsun Lin
+ * @copyright Copyright 2009-2014 John Flatness, Yu-Hsun Lin
  * @license http://www.gnu.org/licenses/gpl-3.0.txt
  */
-
-require_once 'XmlGeneratorAbstract.php';
 
 /**
  * Abstract class containing functions for tasks common to all OAI-PMH
@@ -16,8 +13,8 @@ require_once 'XmlGeneratorAbstract.php';
  * @package OaiPmhRepository
  * @subpackage Libraries
  */
-class OaiPmhRepository_OaiXmlGeneratorAbstract extends OaiPmhRepository_XmlGeneratorAbstract {
-    
+class OaiPmhRepository_OaiXmlGeneratorAbstract
+{
     // =========================
     // General OAI-PMH constants
     // =========================
@@ -38,23 +35,33 @@ class OaiPmhRepository_OaiXmlGeneratorAbstract extends OaiPmhRepository_XmlGener
     const OAI_ERR_NO_RECORDS_MATCH          = 'noRecordsMatch';
     const OAI_ERR_NO_METADATA_FORMATS       = 'noMetadataFormats';
     const OAI_ERR_NO_SET_HIERARCHY          = 'noSetHierarchy';
-    
+
     // =========================
     // Date/time constants
     // =========================
-    
-    const OAI_DATE_PCRE     = "/^\\d{4}\\-\\d{2}\\-\\d{2}$/";
-    const OAI_DATETIME_PCRE = "/^\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}Z$/";
-    
-    const OAI_GRANULARITY_STRING   = 'YYYY-MM-DDThh:mm:ssZ';
-    const OAI_GRANULARITY_DATE     = 1;
-    const OAI_GRANULARITY_DATETIME = 2;
-    
+
+    protected $_oaiErrorMessages = array(
+        self::OAI_ERR_BAD_ARGUMENT => 'The request includes illegal arguments, is missing required arguments, includes a repeated argument, or values for arguments have an illegal syntax.',
+        self::OAI_ERR_BAD_RESUMPTION_TOKEN => 'The value of the resumptionToken argument is invalid or expired.',
+        self::OAI_ERR_BAD_VERB => "Value of the verb argument is not a legal OAI-PMH verb, the verb argument is missing, or the verb argument is repeated.",
+        self::OAI_ERR_CANNOT_DISSEMINATE_FORMAT => 'The metadata format identified by the value given for the metadataPrefix argument is not supported by the item or by the repository.',
+        self::OAI_ERR_ID_DOES_NOT_EXIST => 'The value of the identifier argument is unknown or illegal in this repository.',
+        self::OAI_ERR_NO_RECORDS_MATCH => 'The combination of the values of the from, until, set and metadataPrefix arguments results in an empty list.',
+        self::OAI_ERR_NO_METADATA_FORMATS => 'There are no metadata formats available for the specified item.',
+        self::OAI_ERR_NO_SET_HIERARCHY => 'The repository does not support sets.',
+    );
+
     /**
      * Flags if an error has occurred during the response.
      * @var bool
      */
     protected $error;
+
+    /**
+     * The XML document being generated.
+     * @var DOMDocument
+     */
+    protected $document;
     
     /**
      * Throws an OAI-PMH error on the given response.
@@ -65,25 +72,22 @@ class OaiPmhRepository_OaiXmlGeneratorAbstract extends OaiPmhRepository_XmlGener
     public function throwError($error, $message = null)
     {
         $this->error = true;
+        // Set the default message.
+        if (is_null($message)) {
+            $message = $this->_oaiErrorMessages[$error];
+        }
         $errorElement = $this->document->createElement('error', $message);
         $this->document->documentElement->appendChild($errorElement);
         $errorElement->setAttribute('code', $error);
     }
     
     /**
-     * Returns the granularity of the given utcDateTime string.  Returns zero
-     * if the given string is not in utcDateTime format.
+     * Get the DOMDocument for this generator.
      *
-     * @param string $dateTime Time string
-     * @return int OAI_GRANULARITY_DATE, OAI_GRANULARITY_DATETIME, or zero
+     * @return DOMDocument
      */
-    static function getGranularity($dateTime)
+    public function getDocument()
     {
-        if(preg_match(self::OAI_DATE_PCRE, $dateTime))
-            return self::OAI_GRANULARITY_DATE;
-        else if(preg_match(self::OAI_DATETIME_PCRE, $dateTime))
-            return self::OAI_GRANULARITY_DATETIME;
-        else 
-            return false;
+        return $this->document;
     }
 }
