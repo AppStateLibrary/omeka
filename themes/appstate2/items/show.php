@@ -155,7 +155,7 @@
 	jQuery(".application-pdf .audio-file-div").text("Download PDF");
 	jQuery(".audio-mpeg").each(function(index){
 		var audio = jQuery(this).find(".download-file").attr("href");
-                var audioFileDiv = jQuery(this).find(".audio-file-div");
+		var audioFileDiv = jQuery(this).find(".audio-file-div");
 		var audioFileText = audioFileDiv.text();
 
 		audioFileDiv.text("");
