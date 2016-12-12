@@ -154,9 +154,12 @@
 	}
 	jQuery(".application-pdf .audio-file-div").text("Download PDF");
 	jQuery(".audio-mpeg").each(function(index){
-		var audio=jQuery(this).find(".download-file").attr("href");
-		jQuery(this).find(".audio-file-div").text("");
-		jQuery(this).find(".audio-file-div").html("<a href='"+audio+"'>Listen to Sound File</a>");
+		var audio = jQuery(this).find(".download-file").attr("href");
+                var audioFileDiv = jQuery(this).find(".audio-file-div");
+		var audioFileText = audioFileDiv.text();
+
+		audioFileDiv.text("");
+		audioFileDiv.html("<a href='" + audio + "'>Listen to Sound File: " + audioFileText + "</a>");
 	});
 	jQuery('video').css('width','75%');
 	jQuery('.element-text').each(function(){
