@@ -39,3 +39,6 @@ plugins/EadImporter/xmldump/*
 .buildpath
 .project
 .settings/
+
+# Some unknown "repository" that I don't want to delete
+repository
