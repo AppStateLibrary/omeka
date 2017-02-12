@@ -9,7 +9,7 @@
     <?php echo all_element_texts($item,
         array(
             'show_empty_elements' => false,
-            'show_element_sets' => 'Dublin Core, Document Item Type Metadata',
+            'show_element_sets' => 'Dublin Core, Document Item Type Metadata, Still Image Item Type Metadata',
             'show_element_set_headings' => false
         ));
     ?>
