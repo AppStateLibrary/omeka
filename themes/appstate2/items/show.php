@@ -159,7 +159,7 @@
 		var audioFileText = audioFileDiv.text();
 
 		audioFileDiv.text("");
-		audioFileDiv.html("<a href='" + audio + "'>Listen to Sound File: " + audioFileText + "</a>");
+		audioFileDiv.html("<a href='" + audio + "'>" + audioFileText + "</a>");
 	});
 	jQuery('video').css('width','75%');
 	jQuery('.element-text').each(function(){
