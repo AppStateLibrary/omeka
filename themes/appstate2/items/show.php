@@ -4,6 +4,8 @@
 
     <h1 style="margin-bottom:.75em;"><?php echo metadata('item', array('Dublin Core', 'Title')); ?></h1>
 
+    <?php echo get_specific_plugin_hook_output('DocsViewer', 'public_items_show', array('view' => $this, 'item' => $item)); ?>
+
     <?php echo all_element_texts($item,
         array(
             'show_empty_elements' => false,
@@ -12,7 +14,10 @@
         ));
     ?>
 
-    <?php fire_plugin_hook('public_items_show', array('view' => $this, 'item' => $item)); ?>
+    <?php //fire_plugin_hook('public_items_show', array('view' => $this, 'item' => $item)); ?>
+
+    <?php echo get_specific_plugin_hook_output('SocialBookmarking', 'public_items_show', array('view' => $this, 'item' => $item)); ?>
+    <?php echo get_specific_plugin_hook_output('Commenting', 'public_items_show', array('view' => $this, 'item' => $item)); ?>
 
 </div><!-- end primary -->
 
@@ -159,7 +164,7 @@
 		var audioFileText = audioFileDiv.text();
 
 		audioFileDiv.text("");
-		audioFileDiv.html("<a href='" + audio + "'>Listen to Sound File: " + audioFileText + "</a>");
+		audioFileDiv.html("<a href='" + audio + "'>" + audioFileText + "</a>");
 	});
 	jQuery('video').css('width','75%');
 	jQuery('.element-text').each(function(){
